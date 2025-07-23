@@ -1,6 +1,6 @@
 import { subjects } from "@/lib/mock-data"
 import { columns } from "./columns"
-import { DataTable } from "../students/data-table"
+import { DataTable } from "@/components/common/data-table"
 
 export default function SubjectsAdminPage() {
   return (
@@ -11,7 +11,7 @@ export default function SubjectsAdminPage() {
             <p className="text-muted-foreground">Manage all subjects and course materials.</p>
         </div>
       </div>
-      <DataTable columns={columns} data={subjects} />
+      <DataTable columns={columns} data={subjects} filterColumn="name" />
     </div>
   )
 }

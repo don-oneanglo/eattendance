@@ -1,6 +1,6 @@
 import { classes, getSubject, getTeacher } from "@/lib/mock-data"
 import { columns } from "./columns"
-import { DataTable } from "../students/data-table"
+import { DataTable } from "@/components/common/data-table"
 
 const processedClasses = classes.map(c => {
     const teacher = getTeacher(c.teacherId);
@@ -22,7 +22,7 @@ export default function ClassesAdminPage() {
             <p className="text-muted-foreground">Manage all classes and their assignments.</p>
         </div>
       </div>
-      <DataTable columns={columns} data={processedClasses} />
+      <DataTable columns={columns} data={processedClasses} filterColumn="name" />
     </div>
   )
 }

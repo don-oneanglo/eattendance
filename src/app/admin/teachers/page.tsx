@@ -1,6 +1,6 @@
 import { teachers } from "@/lib/mock-data"
 import { columns } from "./columns"
-import { DataTable } from "../students/data-table" // Reusing the same data table component
+import { DataTable } from "@/components/common/data-table" 
 
 export default function TeachersAdminPage() {
   return (
@@ -11,7 +11,7 @@ export default function TeachersAdminPage() {
             <p className="text-muted-foreground">Manage all teacher records in the system.</p>
         </div>
       </div>
-      <DataTable columns={columns} data={teachers} />
+      <DataTable columns={columns} data={teachers} filterColumn="name" />
     </div>
   )
 }

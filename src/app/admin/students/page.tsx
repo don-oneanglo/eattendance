@@ -1,6 +1,6 @@
 import { students } from "@/lib/mock-data"
 import { columns } from "./columns"
-import { DataTable } from "./data-table"
+import { DataTable } from "@/components/common/data-table"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -46,7 +46,7 @@ export default function StudentsAdminPage() {
             </DialogContent>
         </Dialog>
       </div>
-      <DataTable columns={columns} data={students} />
+      <DataTable columns={columns} data={students} filterColumn="name" />
     </div>
   )
 }
