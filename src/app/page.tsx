@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ScanFace, CheckCircle, Loader, CameraOff, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { runTeacherAuthentication } from "@/lib/actions";
+
 
 export default function LoginPage() {
   const [isScanning, setIsScanning] = useState(false);
@@ -54,17 +56,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (isScanning) {
-      timer = setTimeout(() => {
-        setIsScanning(false);
-        setIsAuthenticated(true);
-      }, 2000);
-    }
-    return () => clearTimeout(timer);
-  }, [isScanning]);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
     if (isAuthenticated) {
       timer = setTimeout(() => {
         router.push("/dashboard");
@@ -72,17 +63,59 @@ export default function LoginPage() {
     }
     return () => clearTimeout(timer);
   }, [isAuthenticated, router]);
+  
+  const captureFrame = useCallback(() => {
+    if (!videoRef.current) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg");
+  }, []);
 
-  const handleLogin = () => {
-    if (hasCameraPermission) {
-      setIsScanning(true);
-    } else {
+  const handleLogin = async () => {
+    if (!hasCameraPermission) {
        toast({
           variant: 'destructive',
           title: 'Cannot Scan',
           description: 'Camera access is required to perform face scanning.',
         });
+        return;
     }
+    
+    setIsScanning(true);
+    const imageDataUri = captureFrame();
+
+    if (!imageDataUri) {
+      toast({
+        title: "Error",
+        description: "Could not capture image from camera.",
+        variant: "destructive",
+      });
+      setIsScanning(false);
+      return;
+    }
+    
+    const result = await runTeacherAuthentication(imageDataUri);
+    setIsScanning(false);
+    
+    if (result.success && result.teacher) {
+        setIsAuthenticated(true);
+        toast({
+            title: `Welcome, ${result.teacher.name}!`,
+            description: "You have been successfully authenticated.",
+            variant: "default",
+        });
+    } else {
+      toast({
+        title: "Authentication Failed",
+        description: result.error || "Could not recognize your face. Please try again.",
+        variant: "destructive",
+      });
+    }
+
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -95,7 +128,7 @@ export default function LoginPage() {
     } else {
       toast({
         title: 'Invalid Credentials',
-        description: 'The username or password you entered is incorrect for client-side check.',
+        description: 'The username or password you entered is incorrect.',
         variant: 'destructive'
       });
     }
