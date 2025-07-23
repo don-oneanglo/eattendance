@@ -53,4 +53,5 @@ export interface AppClass {
 
 export interface StudentWithStatus extends Student {
   status: 'present' | 'absent' | 'late';
+  remarks?: string;
 }

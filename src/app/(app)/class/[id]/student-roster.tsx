@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { FileDown, Sparkles } from "lucide-react";
+import { FileDown, Check, X, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
 
 type StudentRosterProps = {
   initialRoster: StudentWithStatus[];
@@ -18,22 +19,31 @@ type StudentRosterProps = {
 };
 
 export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
-  const [roster, setRoster] = useState<StudentWithStatus[]>(initialRoster);
+  const [roster, setRoster] = useState<StudentWithStatus[]>(initialRoster.map(s => ({...s, remarks: ''})));
   const { toast } = useToast();
 
-  const handleStatusChange = (studentId: number, isPresent: boolean) => {
+  const handleStatusChange = (studentId: number, status: StudentWithStatus['status']) => {
     setRoster(prevRoster =>
       prevRoster.map(student =>
-        student.id === studentId ? { ...student, status: isPresent ? "present" : "absent" } : student
+        student.id === studentId ? { ...student, status } : student
+      )
+    );
+  };
+  
+  const handleRemarkChange = (studentId: number, remarks: string) => {
+    setRoster(prevRoster =>
+      prevRoster.map(student =>
+        student.id === studentId ? { ...student, remarks } : student
       )
     );
   };
 
   const handleExport = () => {
-    const dataToExport = roster.map(({ studentCode, name, status }) => ({
+    const dataToExport = roster.map(({ studentCode, name, status, remarks }) => ({
       student_id: studentCode,
       student_name: name,
       attendance_status: status,
+      remarks,
     }));
     exportToCsv(`attendance-report-${classId}-${new Date().toISOString().split('T')[0]}.csv`, dataToExport);
     toast({ title: "Export Started", description: "Your CSV report is downloading." });
@@ -42,11 +52,11 @@ export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
   const getStatusBadge = (status: StudentWithStatus['status']) => {
     switch (status) {
       case "present":
-        return <Badge variant="default" className="bg-accent text-accent-foreground">Present</Badge>;
+        return <Badge variant="default" className="bg-success text-success-foreground">Present</Badge>;
       case "absent":
-        return <Badge variant="secondary">Absent</Badge>;
+        return <Badge variant="destructive">Absent</Badge>;
       case "late":
-        return <Badge variant="destructive">Late</Badge>;
+        return <Badge variant="default" className="bg-warning text-warning-foreground">Late</Badge>;
       default:
         return null;
     }
@@ -54,8 +64,14 @@ export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
 
   return (
     <Card className="flex-1 flex flex-col">
-      <CardContent className="pt-6 flex-1 flex flex-col">
-        <div className="flex justify-end gap-2 mb-4">
+      <CardContent className="pt-6 flex-1 flex flex-col gap-4">
+        <Alert variant="destructive" className="bg-yellow-100 border-yellow-300 text-yellow-800 [&>svg]:text-yellow-800">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="font-bold">
+            **If a student is present in school, but missing in class for more than 10 minutes, please report to the Thai Director immediately**
+          </AlertDescription>
+        </Alert>
+        <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={handleExport}>
             <FileDown className="mr-2 h-4 w-4" />
             Export CSV
@@ -63,33 +79,49 @@ export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
         </div>
         <div className="border rounded-lg flex-1 overflow-y-auto">
           <Table>
-            <TableHeader className="sticky top-0 bg-card">
+            <TableHeader className="sticky top-0 bg-secondary">
               <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead className="text-center">Status</TableHead>
-                <TableHead className="text-right">Mark Present</TableHead>
+                <TableHead className="w-[40%]">STUDENT LIST</TableHead>
+                <TableHead className="text-center">OPTIONS</TableHead>
+                <TableHead className="text-center">STATUS</TableHead>
+                <TableHead className="text-center w-[25%]">REMARKS</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {roster.map(student => (
+              {roster.map((student, index) => (
                 <TableRow key={student.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <Avatar>
+                      <span>{index + 1}.</span>
+                      <Avatar className="w-12 h-12">
                         <AvatarImage src={student.avatarUrl} alt={student.name} data-ai-hint="person portrait" />
                         <AvatarFallback>{student.nickname.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <span>{student.name}</span>
+                      <span>{student.name} ({student.form})</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-2">
+                         <Button size="icon" className="bg-success text-success-foreground hover:bg-success/90 w-10 h-10" onClick={() => handleStatusChange(student.id, 'present')}>
+                            <Check />
+                         </Button>
+                         <Button size="icon" variant="destructive" className="w-10 h-10" onClick={() => handleStatusChange(student.id, 'absent')}>
+                            <X />
+                         </Button>
+                         <Button size="icon" className="bg-warning text-warning-foreground hover:bg-warning/90 w-10 h-10" onClick={() => handleStatusChange(student.id, 'late')}>
+                            <span className="font-bold text-lg">L</span>
+                         </Button>
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
                     {getStatusBadge(student.status)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Switch
-                      checked={student.status === "present"}
-                      onCheckedChange={(checked) => handleStatusChange(student.id, checked)}
-                      aria-label={`Mark ${student.name} as present or absent`}
+                    <Textarea 
+                      value={student.remarks}
+                      onChange={(e) => handleRemarkChange(student.id, e.target.value)}
+                      placeholder="Add remarks..."
+                      className="min-h-[40px]"
                     />
                   </TableCell>
                 </TableRow>
