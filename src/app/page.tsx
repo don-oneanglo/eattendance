@@ -217,7 +217,7 @@ export default function LoginPage() {
                     <form onSubmit={handleAdminLogin} className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="username">Username</Label>
-                            <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="super-it" required />
+                            <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
                         </div>
                          <div className="space-y-2">
                             <Label htmlFor="password">Password</Label>
