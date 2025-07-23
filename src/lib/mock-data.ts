@@ -50,7 +50,8 @@ export async function getClassesForTeacher(teacherId: string): Promise<AppClass[
   `);
 
   const classes: AppClass[] = await Promise.all(result.recordset.map(async (c: any) => {
-     const studentResult = await db.input('subjectSetId', c.id).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
+     const studentDb = await getConnection();
+     const studentResult = await studentDb.input('subjectSetId', c.id).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
      const studentIds = studentResult.recordset.map((s: any) => s.StudentCode);
      
      // Mocking time for now as it's not in the base Class table schema
@@ -79,7 +80,8 @@ export async function getAllClasses(): Promise<AppClass[]> {
   `);
 
   const classes: AppClass[] = await Promise.all(result.recordset.map(async (c: any) => {
-     const studentResult = await db.input('subjectSetId', c.id).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
+     const studentDb = await getConnection();
+     const studentResult = await studentDb.input('subjectSetId', c.id).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
      const studentIds = studentResult.recordset.map((s: any) => s.StudentCode.trim());
      
      return {
@@ -113,8 +115,9 @@ export async function getClass(classId: string): Promise<AppClass | undefined> {
 
   const classInfo = result.recordset[0];
   if (!classInfo) return undefined;
-
-  const studentResult = await db.input('subjectSetId', classId).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
+  
+  const studentDb = await getConnection();
+  const studentResult = await studentDb.input('subjectSetId', classId).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
   const studentIds = studentResult.recordset.map((s: any) => s.StudentCode.trim());
 
   return {
