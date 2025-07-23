@@ -1,18 +1,8 @@
-import { getClassesForTeacher, getSubject, getTeacher } from "@/lib/mock-data"
+import { getAllClasses } from "@/lib/mock-data"
 import { columns } from "./columns"
 import { DataTable } from "@/components/common/data-table"
 import { AppClass } from "@/lib/types";
-
-// We need to fetch all classes for the admin view. 
-// This is a simplified example. In a real app you'd likely fetch all unique classes.
-async function getAllClasses(): Promise<AppClass[]> {
-    // This is a mock implementation. You'd query your database for all classes.
-    // For now, let's aggregate from a few known teachers.
-    const teacher1Classes = await getClassesForTeacher("T001");
-    const teacher2Classes = await getClassesForTeacher("T002");
-    const teacher3Classes = await getClassesForTeacher("T003");
-    return [...teacher1Classes, ...teacher2Classes, ...teacher3Classes];
-}
+import { getTeacher, getSubject } from "@/lib/mock-data";
 
 
 export default async function ClassesAdminPage() {

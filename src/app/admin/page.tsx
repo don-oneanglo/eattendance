@@ -1,40 +1,45 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Users, UserCog, BookText, School, ArrowRight } from "lucide-react";
-import { students, teachers, subjects, classes } from "@/lib/mock-data";
+import { getAllStudents, getAllTeachers, getAllSubjects, getAllClasses } from "@/lib/mock-data";
 
-const overviewItems = [
-  {
-    title: "Students",
-    count: students.length,
-    icon: Users,
-    href: "/admin/students",
-    description: "Manage student profiles and enrollment."
-  },
-  {
-    title: "Teachers",
-    count: teachers.length,
-    icon: UserCog,
-    href: "/admin/teachers",
-    description: "Manage teacher accounts and assignments."
-  },
-  {
-    title: "Subjects",
-    count: subjects.length,
-    icon: BookText,
-    href: "/admin/subjects",
-    description: "Define courses and subject matter."
-  },
-  {
-    title: "Classes",
-    count: classes.length,
-    icon: School,
-    href: "/admin/classes",
-    description: "Assign teachers and students to classes."
-  },
-];
+export default async function AdminDashboardPage() {
+    const students = await getAllStudents();
+    const teachers = await getAllTeachers();
+    const subjects = await getAllSubjects();
+    const classes = await getAllClasses();
 
-export default function AdminDashboardPage() {
+    const overviewItems = [
+      {
+        title: "Students",
+        count: students.length,
+        icon: Users,
+        href: "/admin/students",
+        description: "Manage student profiles and enrollment."
+      },
+      {
+        title: "Teachers",
+        count: teachers.length,
+        icon: UserCog,
+        href: "/admin/teachers",
+        description: "Manage teacher accounts and assignments."
+      },
+      {
+        title: "Subjects",
+        count: subjects.length,
+        icon: BookText,
+        href: "/admin/subjects",
+        description: "Define courses and subject matter."
+      },
+      {
+        title: "Classes",
+        count: classes.length,
+        icon: School,
+        href: "/admin/classes",
+        description: "Assign teachers and students to classes."
+      },
+    ];
+
   return (
     <div>
       <h2 className="text-3xl font-bold tracking-tight mb-6 font-headline">Dashboard</h2>

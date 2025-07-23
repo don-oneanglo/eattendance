@@ -1,8 +1,9 @@
-import { subjects } from "@/lib/mock-data"
+import { getAllSubjects } from "@/lib/mock-data"
 import { columns } from "./columns"
 import { DataTable } from "@/components/common/data-table"
 
-export default function SubjectsAdminPage() {
+export default async function SubjectsAdminPage() {
+  const subjects = await getAllSubjects();
   return (
     <div>
       <div className="flex items-center justify-between mb-6">

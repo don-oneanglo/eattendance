@@ -1,4 +1,4 @@
-import { students } from "@/lib/mock-data"
+import { getAllStudents } from "@/lib/mock-data"
 import { columns } from "./columns"
 import { DataTable } from "@/components/common/data-table"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,8 @@ const AddStudentForm = () => (
     </div>
 )
 
-export default function StudentsAdminPage() {
+export default async function StudentsAdminPage() {
+  const students = await getAllStudents();
   return (
     <div>
       <div className="flex items-center justify-between mb-6">

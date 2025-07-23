@@ -1,8 +1,9 @@
-import { teachers } from "@/lib/mock-data"
+import { getAllTeachers } from "@/lib/mock-data"
 import { columns } from "./columns"
 import { DataTable } from "@/components/common/data-table" 
 
-export default function TeachersAdminPage() {
+export default async function TeachersAdminPage() {
+  const teachers = await getAllTeachers();
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
