@@ -4,7 +4,7 @@ export interface Student {
   studentCode: string;
   nickname: string;
   name: string;
-  avatarUrl: string; // was StudentImage
+  avatarUrl: string;
   email: string;
   campus: string;
   form: string;
@@ -15,7 +15,7 @@ export interface Teacher {
   teacherCode: string;
   nickname: string;
   name: string;
-  avatarUrl: string; // was TeacherImage
+  avatarUrl: string;
   email: string;
   campus: string;
   department: string;
@@ -30,7 +30,7 @@ export interface SubjectSet {
   credits: number;
 }
 
-// This represents a row in the Class table, which is a mapping
+// This represents a row in the Class table, which is a many-to-many mapping
 export interface ClassEnrollment {
   id: number;
   campus: string;
@@ -39,7 +39,7 @@ export interface ClassEnrollment {
   studentCode: string;
 }
 
-// This is a more useful structure for the application UI
+// This is a more useful structure for the application UI, created by aggregating ClassEnrollment
 export interface AppClass {
   id: string; // Using SubjectSetID for this
   name: string;
@@ -56,11 +56,10 @@ export interface Session {
     subjectSetId: string;
     teacherCode: string;
     campus: string;
-    date: string;
+    date: string; // Corresponds to SessionDate
     startTime: string;
     endTime: string;
 }
-
 
 export interface StudentWithStatus extends Student {
   status: 'present' | 'absent' | 'late';
