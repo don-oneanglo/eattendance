@@ -3,10 +3,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader, Sparkles, AlertTriangle, CameraOff } from "lucide-react";
+import { Loader, Sparkles, CameraOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { runAutoAttendance } from "@/lib/actions";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type CameraViewProps = {
   classId: string;
@@ -15,6 +14,7 @@ type CameraViewProps = {
 export function CameraView({ classId }: CameraViewProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [scanProgress, setScanProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
@@ -45,7 +45,6 @@ export function CameraView({ classId }: CameraViewProps) {
     getCameraPermission();
     
     return () => {
-        // Stop camera stream when component unmounts
         if (videoRef.current && videoRef.current.srcObject) {
             const stream = videoRef.current.srcObject as MediaStream;
             stream.getTracks().forEach(track => track.stop());
@@ -68,33 +67,59 @@ export function CameraView({ classId }: CameraViewProps) {
 
   const handleAutoAttend = async () => {
     setIsLoading(true);
-    const imageDataUri = captureFrame();
+    setScanProgress(0);
+    const frames: string[] = [];
+    const captureInterval = 500; // ms
+    const scanDuration = 3000; // ms
+    const frameCount = scanDuration / captureInterval;
 
-    if (!imageDataUri) {
+    const capturePromise = new Promise<void>((resolve) => {
+      const intervalId = setInterval(() => {
+        const frame = captureFrame();
+        if (frame) {
+          frames.push(frame);
+        }
+        setScanProgress((prev) => prev + 100 / frameCount);
+
+        if (frames.length >= frameCount) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, captureInterval);
+    });
+
+    await capturePromise;
+
+    if (frames.length === 0) {
       toast({
         title: "Error",
-        description: "Could not capture image from camera.",
+        description: "Could not capture any images from the camera.",
         variant: "destructive",
       });
       setIsLoading(false);
       return;
     }
-
-    // In a real app, you might send multiple frames. For this demo, one is enough.
-    const result = await runAutoAttendance(classId, [imageDataUri]);
+    
+    const result = await runAutoAttendance(classId, frames);
     setIsLoading(false);
+    setScanProgress(0);
 
     if (result.success && result.presentStudents) {
       const presentNames = result.presentStudents;
-      // Note: We are not updating the roster here directly.
-      // This would require a more complex state management (e.g., Zustand, Redux, or Context)
-      // to share state between sibling components (CameraView and StudentRoster).
-      // For now, we'll just show a toast.
-      toast({
-        title: "Attendance Scan Complete",
-        description: `Identified: ${presentNames.join(', ')}. The roster will be updated shortly.`,
-        variant: "default",
-      });
+      if (presentNames.length > 0) {
+        toast({
+            title: "Attendance Scan Complete",
+            description: `Identified: ${presentNames.join(', ')}. The roster will be updated shortly.`,
+            variant: "default",
+        });
+      } else {
+         toast({
+            title: "No students recognized",
+            description: "Please ensure students are clearly visible and try again.",
+            variant: "default",
+        });
+      }
+      
     } else {
       toast({
         title: "Error",
@@ -124,7 +149,15 @@ export function CameraView({ classId }: CameraViewProps) {
                 <h3 className="font-bold text-xl">Accessing Camera...</h3>
             </div>
         )}
-
+        {isLoading && (
+            <div className="absolute inset-0 bg-primary/80 flex flex-col items-center justify-center text-center p-4 text-primary-foreground">
+                <Loader className="h-16 w-16 animate-spin mb-4" />
+                <h3 className="font-bold text-xl">Scanning...</h3>
+                <div className="w-full bg-primary-foreground/20 rounded-full h-2.5 mt-4">
+                  <div className="bg-primary-foreground h-2.5 rounded-full" style={{ width: `${scanProgress}%` }}></div>
+                </div>
+            </div>
+        )}
       </div>
        <Button onClick={handleAutoAttend} disabled={isLoading || !hasCameraPermission}>
         {isLoading ? (
@@ -132,17 +165,8 @@ export function CameraView({ classId }: CameraViewProps) {
         ) : (
           <Sparkles className="mr-2 h-4 w-4" />
         )}
-        Scan Face for Attendance
+        Scan Faces for Attendance
       </Button>
-       {hasCameraPermission === false && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Camera Access Denied</AlertTitle>
-            <AlertDescription>
-                You need to allow camera access in your browser settings to use this feature.
-            </AlertDescription>
-          </Alert>
-       )}
     </Card>
   );
 }

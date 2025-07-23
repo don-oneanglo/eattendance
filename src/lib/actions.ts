@@ -13,19 +13,16 @@ export async function runAutoAttendance(classId: string, imageDataUris: string[]
 
     const studentNames = studentsInClass.map(s => s.name);
     
-    // The new camera-view component will pass the captured image data URIs.
     const result = await autoAttendance({
       studentImageDataUris: imageDataUris,
       knownStudentList: studentNames,
     });
-
-    // The AI might return slightly different names, so you might need normalization in a real app.
-    // For this mock, we'll assume it returns a subset of the provided names.
-    const recognizedStudent = studentsInClass.find(s => result.presentStudents.includes(s.name));
-
+    
+    // The AI returns the names of the students it recognized.
+    // We don't need to find them again, just return the list.
     return {
       success: true,
-      presentStudents: recognizedStudent ? [recognizedStudent.name] : [],
+      presentStudents: result.presentStudents,
     };
 
   } catch (error) {
