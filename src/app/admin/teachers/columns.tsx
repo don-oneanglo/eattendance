@@ -34,7 +34,7 @@ export const columns: ColumnDef<Teacher>[] = [
             <div className="flex items-center gap-3">
                 <Avatar>
                     <AvatarImage src={teacher.avatarUrl} alt={teacher.name} data-ai-hint="person portrait" />
-                    <AvatarFallback>{teacher.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{teacher.nickname.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <span className="font-medium">{teacher.name}</span>
             </div>
@@ -42,8 +42,16 @@ export const columns: ColumnDef<Teacher>[] = [
     }
   },
   {
-    accessorKey: "id",
+    accessorKey: "teacherCode",
     header: "Teacher ID",
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+  },
+    {
+    accessorKey: "department",
+    header: "Department",
   },
   {
     id: "actions",
@@ -62,7 +70,7 @@ export const columns: ColumnDef<Teacher>[] = [
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(teacher.id)}
+                onClick={() => navigator.clipboard.writeText(teacher.teacherCode)}
                 >
                 Copy teacher ID
                 </DropdownMenuItem>

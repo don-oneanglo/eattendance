@@ -11,23 +11,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Subject } from "@/lib/types"
+import type { SubjectSet } from "@/lib/types"
 
-export const columns: ColumnDef<Subject>[] = [
+export const columns: ColumnDef<SubjectSet>[] = [
   {
-    accessorKey: "name",
+    accessorKey: "subject",
     header: ({ column }) => {
       return (
         <Button
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Name
+          Subject
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       )
     },
-     cell: ({ row }) => <div className="pl-4 font-medium">{row.getValue("name")}</div>,
+     cell: ({ row }) => <div className="pl-4 font-medium">{row.getValue("subject")}</div>,
   },
   {
     accessorKey: "description",
@@ -35,8 +35,12 @@ export const columns: ColumnDef<Subject>[] = [
     cell: ({ row }) => <div className="max-w-xs truncate">{row.getValue("description")}</div>,
   },
   {
-    accessorKey: "id",
+    accessorKey: "subjectSetId",
     header: "Subject ID",
+  },
+    {
+    accessorKey: "credits",
+    header: "Credits",
   },
   {
     id: "actions",
@@ -55,7 +59,7 @@ export const columns: ColumnDef<Subject>[] = [
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(subject.id)}
+                onClick={() => navigator.clipboard.writeText(subject.subjectSetId)}
                 >
                 Copy subject ID
                 </DropdownMenuItem>

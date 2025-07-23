@@ -8,7 +8,7 @@ const processedClasses = classes.map(c => {
     return {
         ...c,
         teacherName: teacher?.name || 'N/A',
-        subjectName: subject?.name || 'N/A',
+        subjectName: subject?.subject || 'N/A',
         studentCount: c.studentIds.length,
     }
 })

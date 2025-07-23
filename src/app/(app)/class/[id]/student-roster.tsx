@@ -21,7 +21,7 @@ export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
   const [roster, setRoster] = useState<StudentWithStatus[]>(initialRoster);
   const { toast } = useToast();
 
-  const handleStatusChange = (studentId: string, isPresent: boolean) => {
+  const handleStatusChange = (studentId: number, isPresent: boolean) => {
     setRoster(prevRoster =>
       prevRoster.map(student =>
         student.id === studentId ? { ...student, status: isPresent ? "present" : "absent" } : student
@@ -30,8 +30,8 @@ export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
   };
 
   const handleExport = () => {
-    const dataToExport = roster.map(({ id, name, status }) => ({
-      student_id: id,
+    const dataToExport = roster.map(({ studentCode, name, status }) => ({
+      student_id: studentCode,
       student_name: name,
       attendance_status: status,
     }));
@@ -77,7 +77,7 @@ export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarImage src={student.avatarUrl} alt={student.name} data-ai-hint="person portrait" />
-                        <AvatarFallback>{student.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{student.nickname.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <span>{student.name}</span>
                     </div>

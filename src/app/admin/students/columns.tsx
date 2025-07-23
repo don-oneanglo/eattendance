@@ -42,8 +42,20 @@ export const columns: ColumnDef<Student>[] = [
     }
   },
   {
-    accessorKey: "id",
+    accessorKey: "studentCode",
     header: "Student ID",
+  },
+  {
+    accessorKey: "email",
+    header: "Email",
+  },
+  {
+    accessorKey: "campus",
+    header: "Campus",
+  },
+  {
+    accessorKey: "form",
+    header: "Form",
   },
   {
     id: "actions",
@@ -62,7 +74,7 @@ export const columns: ColumnDef<Student>[] = [
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(student.id)}
+                onClick={() => navigator.clipboard.writeText(student.studentCode)}
                 >
                 Copy student ID
                 </DropdownMenuItem>

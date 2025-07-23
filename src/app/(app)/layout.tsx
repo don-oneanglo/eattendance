@@ -3,7 +3,7 @@ import { getTeacher } from "@/lib/mock-data";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   // In a real app, you'd get the logged-in user's ID from a session
-  const teacher = getTeacher("T01");
+  const teacher = getTeacher("T001");
 
   return (
     <div className="min-h-screen flex flex-col">

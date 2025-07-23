@@ -11,7 +11,7 @@ export default function SubjectsAdminPage() {
             <p className="text-muted-foreground">Manage all subjects and course materials.</p>
         </div>
       </div>
-      <DataTable columns={columns} data={subjects} filterColumn="name" />
+      <DataTable columns={columns} data={subjects} filterColumn="subject" />
     </div>
   )
 }

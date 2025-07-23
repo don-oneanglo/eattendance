@@ -13,7 +13,7 @@ import { getClassesForTeacher, getSubject, getTeacher } from "@/lib/mock-data";
 
 export default function DashboardPage() {
   // In a real app, you'd get this from the user's session
-  const teacherId = "T01";
+  const teacherId = "T001";
   const teacher = getTeacher(teacherId);
   const classes = getClassesForTeacher(teacherId);
 
@@ -34,7 +34,7 @@ export default function DashboardPage() {
                   <CardTitle className="font-headline text-2xl">{cls.name}</CardTitle>
                   <CardDescription className="flex items-center gap-2 pt-1">
                     <BookOpen className="h-4 w-4" />
-                    {subject?.name}
+                    {subject?.subject}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-grow">

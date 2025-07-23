@@ -28,7 +28,7 @@ export default function ClassPage({ params }: ClassPageProps) {
       <div className="mb-8">
         <h1 className="font-headline text-4xl font-bold">{classInfo.name}</h1>
         <div className="flex items-center gap-6 text-muted-foreground text-lg mt-2">
-            <span className="flex items-center gap-2"><BookOpen className="h-5 w-5" /> {subject?.name}</span>
+            <span className="flex items-center gap-2"><BookOpen className="h-5 w-5" /> {subject?.subject}</span>
             <span className="flex items-center gap-2"><Users className="h-5 w-5" /> {students.length} Students</span>
         </div>
       </div>

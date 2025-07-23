@@ -11,9 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import type { Class } from "@/lib/types"
+import type { AppClass } from "@/lib/types"
 
-type ProcessedClass = Class & { teacherName: string, subjectName: string, studentCount: number }
+type ProcessedClass = AppClass & { teacherName: string, subjectName: string, studentCount: number }
 
 export const columns: ColumnDef<ProcessedClass>[] = [
   {
