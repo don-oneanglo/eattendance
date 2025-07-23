@@ -90,37 +90,12 @@ export default function LoginPage() {
     // This is a basic client-side check. 
     // The actual security is handled by the middleware.
     if (username === 'super-it' && password === 'F!123w@77') {
-      // We don't need to do anything special here, just navigate.
-      // The browser will remember the credentials for the basic auth prompt.
-      
-      // To trigger the browser's basic auth prompt, we have to make a request
-      // to the protected route. We can do this by trying to fetch it.
-      fetch('/admin', {
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${username}:${password}`)
-        }
-      }).then(res => {
-        if(res.ok) {
-           router.push('/admin');
-        } else {
-           toast({
-            title: 'Admin Login Failed',
-            description: 'Please check your credentials.',
-            variant: 'destructive'
-           });
-        }
-      }).catch(() => {
-        toast({
-            title: 'Error',
-            description: 'Could not connect to the server.',
-            variant: 'destructive'
-           });
-      })
-      
+      // The middleware will intercept this navigation and prompt for credentials.
+      router.push('/admin');
     } else {
       toast({
         title: 'Invalid Credentials',
-        description: 'The username or password you entered is incorrect.',
+        description: 'The username or password you entered is incorrect for client-side check.',
         variant: 'destructive'
       });
     }
