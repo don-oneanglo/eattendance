@@ -50,6 +50,17 @@ export interface AppClass {
   period: string;
 }
 
+export interface Session {
+    id: number;
+    name: string;
+    subjectSetId: string;
+    teacherCode: string;
+    campus: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+}
+
 
 export interface StudentWithStatus extends Student {
   status: 'present' | 'absent' | 'late';

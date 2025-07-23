@@ -21,14 +21,14 @@ export default function DashboardPage() {
     <div className="container py-8">
       <div className="mb-8">
         <h1 className="font-headline text-4xl font-bold">Welcome, {teacher?.name}!</h1>
-        <p className="text-muted-foreground text-lg">Here are your classes for today. Select a class to start taking attendance.</p>
+        <p className="text-muted-foreground text-lg">Here are your classes for today. Select a class to manage its sessions.</p>
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {classes.map((cls) => {
           const subject = getSubject(cls.subjectId);
           return (
-            <Link href={`/class/${cls.id}`} key={cls.id} className="group">
+            <Link href={`/class/${cls.id}/sessions`} key={cls.id} className="group">
               <Card className="h-full flex flex-col transition-all duration-300 ease-in-out group-hover:shadow-xl group-hover:-translate-y-1 group-hover:border-primary">
                 <CardHeader>
                   <CardTitle className="font-headline text-2xl">{cls.name}</CardTitle>
@@ -50,7 +50,7 @@ export default function DashboardPage() {
                    </div>
                 </CardContent>
                 <CardFooter className="flex justify-between items-center text-primary font-bold">
-                  <span>Take Attendance</span>
+                  <span>Manage Sessions</span>
                   <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
                 </CardFooter>
               </Card>

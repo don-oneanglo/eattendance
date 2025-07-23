@@ -1,4 +1,4 @@
-import type { Student, Teacher, SubjectSet, ClassEnrollment, AppClass } from './types';
+import type { Student, Teacher, SubjectSet, ClassEnrollment, AppClass, Session } from './types';
 
 // Insert sample data for Student
 export const students: Student[] = [
@@ -61,6 +61,13 @@ const aggregatedClasses = classEnrollments.reduce((acc, current) => {
 
 export const classes: AppClass[] = Object.values(aggregatedClasses);
 
+// Insert sample data for Sessions
+export const sessions: Session[] = [
+  { id: 1, name: 'CS101 Morning Session', subjectSetId: 'CS101', teacherCode: 'T001', campus: 'Main', date: '2024-07-29', startTime: '09:00', endTime: '10:30' },
+  { id: 2, name: 'CS101 Afternoon Session', subjectSetId: 'CS101', teacherCode: 'T001', campus: 'Main', date: '2024-07-29', startTime: '14:00', endTime: '15:30' },
+  { id: 3, name: 'MATH201 Morning Session', subjectSetId: 'MATH201', teacherCode: 'T002', campus: 'Main', date: '2024-07-29', startTime: '10:00', endTime: '11:30' },
+];
+
 
 // Helper functions to query mock data
 export const getTeacher = (teacherId: string) => teachers.find(t => t.teacherCode === teacherId);
@@ -76,3 +83,7 @@ export const getStudentsForClass = (classId: string) => {
 };
 
 export const getSubject = (subjectId: string) => subjects.find(s => s.subjectSetId === subjectId);
+
+export const getSessionsForClass = (classId: string) => sessions.filter(s => s.subjectSetId === classId);
+
+export const getSession = (sessionId: number) => sessions.find(s => s.id === sessionId);

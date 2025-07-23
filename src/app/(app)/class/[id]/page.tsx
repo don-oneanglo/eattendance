@@ -5,7 +5,7 @@ import { BookOpen, Users } from "lucide-react";
 import { CameraView } from "./camera-view";
 
 type ClassPageProps = {
-  params: { id: string };
+  params: { id: string, sessionId: string };
 };
 
 export default function ClassPage({ params }: ClassPageProps) {
@@ -15,6 +15,7 @@ export default function ClassPage({ params }: ClassPageProps) {
     notFound();
   }
 
+  // In a real app, you'd fetch session details using params.sessionId
   const students = getStudentsForClass(params.id);
   const subject = getSubject(classInfo.subjectId);
 
@@ -27,6 +28,7 @@ export default function ClassPage({ params }: ClassPageProps) {
     <div className="container py-8 flex flex-col h-[calc(100vh-4rem)]">
       <div className="mb-8">
         <h1 className="font-headline text-4xl font-bold">{classInfo.name}</h1>
+        <p className="text-muted-foreground text-lg">Session ID: {params.sessionId}</p>
         <div className="flex items-center gap-6 text-muted-foreground text-lg mt-2">
             <span className="flex items-center gap-2"><BookOpen className="h-5 w-5" /> {subject?.subject}</span>
             <span className="flex items-center gap-2"><Users className="h-5 w-5" /> {students.length} Students</span>
