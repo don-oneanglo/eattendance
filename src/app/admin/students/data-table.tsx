@@ -49,11 +49,16 @@ export function DataTable<TData, TValue>({
       sorting,
       columnFilters,
     },
+    initialState: {
+        pagination: {
+            pageSize: 5,
+        }
+    }
   })
 
   return (
-    <div>
-        <div className="flex items-center py-4">
+    <div className="space-y-4">
+        <div className="flex items-center">
             <Input
             placeholder="Filter by name..."
             value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
@@ -107,7 +112,7 @@ export function DataTable<TData, TValue>({
                 </TableBody>
             </Table>
         </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="flex items-center justify-end space-x-2">
             <Button
             variant="outline"
             size="sm"
