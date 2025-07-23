@@ -8,9 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { ScanFace, FileDown, Loader, Sparkles } from "lucide-react";
+import { FileDown, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { runAutoAttendance } from "@/lib/actions";
 import { exportToCsv } from "@/lib/utils";
 
 type StudentRosterProps = {
@@ -20,7 +19,6 @@ type StudentRosterProps = {
 
 export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
   const [roster, setRoster] = useState<StudentWithStatus[]>(initialRoster);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleStatusChange = (studentId: string, isPresent: boolean) => {
@@ -29,32 +27,6 @@ export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
         student.id === studentId ? { ...student, status: isPresent ? "present" : "absent" } : student
       )
     );
-  };
-
-  const handleAutoAttend = async () => {
-    setIsLoading(true);
-    const result = await runAutoAttendance(classId);
-    setIsLoading(false);
-
-    if (result.success && result.presentStudents) {
-      const presentNames = result.presentStudents;
-      setRoster(prevRoster =>
-        prevRoster.map(student =>
-          presentNames.includes(student.name) ? { ...student, status: "present" } : student
-        )
-      );
-      toast({
-        title: "Attendance Updated",
-        description: `${presentNames.length} students marked as present.`,
-        variant: "default",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: result.error || "Could not complete auto-attendance.",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleExport = () => {
@@ -81,25 +53,17 @@ export function StudentRoster({ initialRoster, classId }: StudentRosterProps) {
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
+    <Card className="flex-1 flex flex-col">
+      <CardContent className="pt-6 flex-1 flex flex-col">
         <div className="flex justify-end gap-2 mb-4">
-          <Button onClick={handleAutoAttend} disabled={isLoading}>
-            {isLoading ? (
-              <Loader className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
-            )}
-            Auto-Attendance
-          </Button>
           <Button variant="outline" onClick={handleExport}>
             <FileDown className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
         </div>
-        <div className="border rounded-lg">
+        <div className="border rounded-lg flex-1 overflow-y-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-card">
               <TableRow>
                 <TableHead>Student</TableHead>
                 <TableHead className="text-center">Status</TableHead>
