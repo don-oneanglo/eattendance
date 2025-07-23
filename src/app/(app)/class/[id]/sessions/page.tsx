@@ -9,15 +9,15 @@ type SessionsPageProps = {
   params: { id: string };
 };
 
-export default function SessionsPage({ params }: SessionsPageProps) {
-  const classInfo = getClass(params.id);
+export default async function SessionsPage({ params }: SessionsPageProps) {
+  const classInfo = await getClass(params.id);
   
   if (!classInfo) {
     notFound();
   }
 
-  const sessions = getSessionsForClass(params.id);
-  const subject = getSubject(classInfo.subjectId);
+  const sessions = await getSessionsForClass(params.id);
+  const subject = await getSubject(classInfo.subjectId);
 
   return (
     <div className="container py-8">

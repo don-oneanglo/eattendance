@@ -1,9 +1,9 @@
 import { AppHeader } from "@/components/common/header";
 import { getTeacher } from "@/lib/mock-data";
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
   // In a real app, you'd get the logged-in user's ID from a session
-  const teacher = getTeacher("T001");
+  const teacher = await getTeacher("T001");
 
   return (
     <div className="min-h-screen flex flex-col">

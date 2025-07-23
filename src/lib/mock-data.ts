@@ -1,88 +1,153 @@
-import type { Student, Teacher, SubjectSet, ClassEnrollment, AppClass, Session } from './types';
+import type { Student, Teacher, SubjectSet, AppClass, Session } from './types';
+import { getConnection } from './db';
 
-// Insert sample data for Student based on SQL script
-export const students: Student[] = [
-  { id: 1, studentCode: 'S001', nickname: 'Johnny', name: 'John Doe', email: 'john.doe@email.com', campus: 'Main', form: 'Form 1A', avatarUrl: 'https://placehold.co/100x100.png' },
-  { id: 2, studentCode: 'S002', nickname: 'Janie', name: 'Jane Smith', email: 'jane.smith@email.com', campus: 'Main', form: 'Form 1B', avatarUrl: 'https://placehold.co/100x100.png' },
-  { id: 3, studentCode: 'S003', nickname: 'Mike', name: 'Mike Johnson', email: 'mike.johnson@email.com', campus: 'Main', form: 'Form 2A', avatarUrl: 'https://placehold.co/100x100.png' },
-  { id: 4, studentCode: 'S004', nickname: 'Sarah', name: 'Sarah Wilson', email: 'sarah.wilson@email.com', campus: 'Main', form: 'Form 1A', avatarUrl: 'https://placehold.co/100x100.png' },
-  { id: 5, studentCode: 'S005', nickname: 'Tommy', name: 'Tom Brown', email: 'tom.brown@email.com', campus: 'Main', form: 'Form 1B', avatarUrl: 'https://placehold.co/100x100.png' },
-];
+// Helper functions to query live database
+export async function getTeacher(teacherId: string): Promise<Teacher | undefined> {
+  const db = await getConnection();
+  const result = await db.input('teacherCode', teacherId).query('SELECT * FROM Teacher WHERE TeacherCode = @teacherCode');
+  const teacher = result.recordset[0];
+  if (!teacher) return undefined;
+  return {
+    id: teacher.Id,
+    teacherCode: teacher.TeacherCode,
+    nickname: teacher.TeacherNickname,
+    name: teacher.TeacherName,
+    avatarUrl: `https://placehold.co/100x100.png`, // Assuming avatarUrl is not in DB
+    email: teacher.EmailAddress,
+    campus: teacher.Campus,
+    department: teacher.Department,
+  };
+}
 
-// Insert sample data for Teacher based on SQL script
-export const teachers: Teacher[] = [
-  { id: 1, teacherCode: 'T001', nickname: 'Dr. Alice', name: 'Dr. Alice Anderson', email: 'alice.anderson@email.com', campus: 'Main', department: 'Computer Science', avatarUrl: 'https://placehold.co/100x100.png' },
-  { id: 2, teacherCode: 'T002', nickname: 'Prof. Bob', name: 'Prof. Bob Baker', email: 'bob.baker@email.com', campus: 'Main', department: 'Mathematics', avatarUrl: 'https://placehold.co/100x100.png' },
-  { id: 3, teacherCode: 'T003', nickname: 'Dr. Carol', name: 'Dr. Carol Clark', email: 'carol.clark@email.com', campus: 'Main', department: 'Physics', avatarUrl: 'https://placehold.co/100x100.png' },
-];
+export async function getClassesForTeacher(teacherId: string): Promise<AppClass[]> {
+  const db = await getConnection();
+  // This query aggregates students for each class taught by the teacher
+  const result = await db.input('teacherCode', teacherId).query(`
+    SELECT
+        c.SubjectSetID as id,
+        s.Subject as name,
+        c.SubjectSetID as subjectId,
+        c.TeacherCode as teacherId
+    FROM Class c
+    JOIN SubjectSet s ON c.SubjectSetID = s.SubjectSetID
+    WHERE c.TeacherCode = @teacherCode
+    GROUP BY c.SubjectSetID, s.Subject, c.TeacherCode
+  `);
 
-// Insert sample data for SubjectSet based on SQL script
-export const subjects: SubjectSet[] = [
-  { id: 1, campus: 'Main', subjectSetId: 'CS101', subject: 'Introduction to Programming', description: 'Basic programming concepts', credits: 4 },
-  { id: 2, campus: 'Main', subjectSetId: 'MATH201', subject: 'Calculus I', description: 'Differential calculus', credits: 3 },
-  { id: 3, campus: 'Main', subjectSetId: 'PHYS101', subject: 'General Physics', description: 'Mechanics and thermodynamics', credits: 4 },
-  { id: 4, campus: 'Main', subjectSetId: 'CS201', subject: 'Data Structures', description: 'Advanced programming concepts', credits: 4 },
-  { id: 5, campus: 'Main', subjectSetId: 'MATH301', subject: 'Linear Algebra', description: 'Vectors and matrices', credits: 3 },
-];
+  const classes: AppClass[] = await Promise.all(result.recordset.map(async (c: any) => {
+     const studentResult = await db.input('subjectSetId', c.id).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
+     const studentIds = studentResult.recordset.map((s: any) => s.StudentCode);
+     
+     // Mocking time for now as it's not in the base Class table schema
+     return {
+        ...c,
+        studentIds,
+        time: c.id.includes('CS') ? "9:00" : "1:00",
+        period: "AM"
+     }
+  }));
 
-// Insert sample data for ClassEnrollment based on SQL script
-export const classEnrollments: ClassEnrollment[] = [
-  { id: 1, campus: 'Main', subjectSetId: 'CS101', teacherCode: 'T001', studentCode: 'S001' },
-  { id: 2, campus: 'Main', subjectSetId: 'CS101', teacherCode: 'T001', studentCode: 'S004' },
-  { id: 3, campus: 'Main', subjectSetId: 'MATH201', teacherCode: 'T002', studentCode: 'S002' },
-  { id: 4, campus: 'Main', subjectSetId: 'MATH201', teacherCode: 'T002', studentCode: 'S005' },
-  { id: 5, campus: 'Main', subjectSetId: 'PHYS101', teacherCode: 'T003', studentCode: 'S003' },
-  { id: 6, campus: 'Main', subjectSetId: 'CS101', teacherCode: 'T001', studentCode: 'S002' },
-  { id: 7, campus: 'Main', subjectSetId: 'PHYS101', teacherCode: 'T003', studentCode: 'S001' },
-];
+  return classes;
+}
 
-// This aggregation logic is a stand-in for what a backend/database would do.
-const aggregatedClasses = classEnrollments.reduce((acc, current) => {
-    const { subjectSetId, teacherCode, studentCode } = current;
-    if (!acc[subjectSetId]) {
-        const subject = subjects.find(s => s.subjectSetId === subjectSetId);
-        acc[subjectSetId] = {
-            id: subjectSetId,
-            name: subject?.subject || 'Unknown Class',
-            subjectId: subjectSetId,
-            teacherId: teacherCode,
-            studentIds: [],
-            // Mocking time, this would come from the Sessions table in a real app
-            time: subjectSetId.includes('CS') ? "9:00" : "1:00",
-            period: "AM"
-        };
+export async function getClass(classId: string): Promise<AppClass | undefined> {
+  const db = await getConnection();
+  const result = await db.input('subjectSetId', classId).query(`
+    SELECT
+        c.SubjectSetID as id,
+        s.Subject as name,
+        c.SubjectSetID as subjectId,
+        c.TeacherCode as teacherId
+    FROM Class c
+    JOIN SubjectSet s ON c.SubjectSetID = s.SubjectSetID
+    WHERE c.SubjectSetID = @subjectSetId
+    GROUP BY c.SubjectSetID, s.Subject, c.TeacherCode
+  `);
+
+  const classInfo = result.recordset[0];
+  if (!classInfo) return undefined;
+
+  const studentResult = await db.input('subjectSetId', classId).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
+  const studentIds = studentResult.recordset.map((s: any) => s.StudentCode.trim());
+
+  return {
+    id: classInfo.id.trim(),
+    name: classInfo.name,
+    subjectId: classInfo.subjectId.trim(),
+    teacherId: classInfo.teacherId.trim(),
+    studentIds,
+    time: classId.includes('CS') ? "9:00" : "1:00", // Mocked
+    period: "AM" // Mocked
+  };
+}
+
+export async function getStudentsForClass(classId: string): Promise<Student[]> {
+  const db = await getConnection();
+  const result = await db.input('subjectSetId', classId).query(`
+    SELECT s.* FROM Student s
+    JOIN Class c ON s.StudentCode = c.StudentCode
+    WHERE c.SubjectSetID = @subjectSetId
+  `);
+  
+  return result.recordset.map((student: any) => ({
+    id: student.Id,
+    studentCode: student.StudentCode,
+    nickname: student.StudentNickname,
+    name: student.StudentName,
+    avatarUrl: `https://placehold.co/100x100.png`,
+    email: student.EmailAddress,
+    campus: student.Campus,
+    form: student.Form
+  }));
+}
+
+export async function getSubject(subjectId: string): Promise<SubjectSet | undefined> {
+  const db = await getConnection();
+  const result = await db.input('subjectSetId', subjectId).query('SELECT * FROM SubjectSet WHERE SubjectSetID = @subjectSetId');
+  const subject = result.recordset[0];
+  if (!subject) return undefined;
+  return {
+    id: subject.Id,
+    campus: subject.Campus,
+    subjectSetId: subject.SubjectSetID,
+    subject: subject.Subject,
+    description: subject.SubjectSetDescription,
+    credits: subject.Credits,
+  };
+}
+
+
+export async function getSessionsForClass(classId: string): Promise<Session[]> {
+    const db = await getConnection();
+    const result = await db.input('subjectSetId', classId).query('SELECT * FROM Sessions WHERE SubjectSetID = @subjectSetId ORDER BY SessionDate, StartTime');
+
+    return result.recordset.map((session: any) => ({
+        id: session.Id,
+        name: session.SessionName,
+        subjectSetId: session.SubjectSetID.trim(),
+        teacherCode: session.TeacherCode.trim(),
+        campus: session.Campus.trim(),
+        date: new Date(session.SessionDate).toISOString(),
+        startTime: session.StartTime,
+        endTime: session.EndTime
+    }));
+}
+
+
+export async function getSession(sessionId: number): Promise<Session | undefined> {
+    const db = await getConnection();
+    const result = await db.input('sessionId', sessionId).query('SELECT * FROM Sessions WHERE Id = @sessionId');
+    const session = result.recordset[0];
+    if (!session) return undefined;
+    
+    return {
+        id: session.Id,
+        name: session.SessionName,
+        subjectSetId: session.SubjectSetID.trim(),
+        teacherCode: session.TeacherCode.trim(),
+        campus: session.Campus.trim(),
+        date: new Date(session.SessionDate).toISOString(),
+        startTime: session.StartTime,
+        endTime: session.EndTime
     }
-    if (!acc[subjectSetId].studentIds.includes(studentCode)) {
-        acc[subjectSetId].studentIds.push(studentCode);
-    }
-    return acc;
-}, {} as Record<string, AppClass>);
-
-export const classes: AppClass[] = Object.values(aggregatedClasses);
-
-// Insert sample data for Sessions based on SQL script
-export const sessions: Session[] = [
-  { id: 1, name: 'CS101 Morning Session', subjectSetId: 'CS101', teacherCode: 'T001', campus: 'Main', date: '2024-01-15', startTime: '09:00', endTime: '10:30' },
-  { id: 2, name: 'CS101 Afternoon Session', subjectSetId: 'CS101', teacherCode: 'T001', campus: 'Main', date: '2024-01-15', startTime: '14:00', endTime: '15:30' },
-  { id: 3, name: 'MATH201 Morning Session', subjectSetId: 'MATH201', teacherCode: 'T002', campus: 'Main', date: '2024-01-15', startTime: '10:00', endTime: '11:30' },
-];
-
-
-// Helper functions to query mock data
-export const getTeacher = (teacherId: string) => teachers.find(t => t.teacherCode === teacherId);
-
-export const getClassesForTeacher = (teacherId: string) => classes.filter(c => c.id && c.teacherId === teacherId);
-
-export const getClass = (classId: string) => classes.find(c => c.id === classId);
-
-export const getStudentsForClass = (classId: string) => {
-  const classInfo = getClass(classId);
-  if (!classInfo) return [];
-  return students.filter(s => classInfo.studentIds.includes(s.studentCode));
-};
-
-export const getSubject = (subjectId: string) => subjects.find(s => s.subjectSetId === subjectId);
-
-export const getSessionsForClass = (classId: string) => sessions.filter(s => s.subjectSetId === classId);
-
-export const getSession = (sessionId: number) => sessions.find(s => s.id === sessionId);
+}

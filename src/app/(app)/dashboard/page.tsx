@@ -11,11 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, BookOpen, Clock, Users } from "lucide-react";
 import { getClassesForTeacher, getSubject, getTeacher } from "@/lib/mock-data";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   // In a real app, you'd get this from the user's session
   const teacherId = "T001";
-  const teacher = getTeacher(teacherId);
-  const classes = getClassesForTeacher(teacherId);
+  const teacher = await getTeacher(teacherId);
+  const classes = await getClassesForTeacher(teacherId);
 
   return (
     <div className="container py-8">
@@ -25,8 +25,8 @@ export default function DashboardPage() {
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {classes.map((cls) => {
-          const subject = getSubject(cls.subjectId);
+        {classes.map(async (cls) => {
+          const subject = await getSubject(cls.subjectId);
           return (
             <Link href={`/class/${cls.id}/sessions`} key={cls.id} className="group">
               <Card className="h-full flex flex-col transition-all duration-300 ease-in-out group-hover:shadow-xl group-hover:-translate-y-1 group-hover:border-primary">

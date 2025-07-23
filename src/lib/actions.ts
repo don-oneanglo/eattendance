@@ -5,7 +5,7 @@ import { getStudentsForClass } from "./mock-data";
 
 export async function runAutoAttendance(classId: string, imageDataUris: string[]) {
   try {
-    const studentsInClass = getStudentsForClass(classId);
+    const studentsInClass = await getStudentsForClass(classId);
     if (!studentsInClass || studentsInClass.length === 0) {
       throw new Error("No students found for this class.");
     }
@@ -20,7 +20,6 @@ export async function runAutoAttendance(classId: string, imageDataUris: string[]
 
     // The AI might return slightly different names, so you might need normalization in a real app.
     // For this mock, we'll assume it returns a subset of the provided names.
-    // Let's simulate the AI recognizing one student from the class list.
     const recognizedStudent = studentsInClass.find(s => result.presentStudents.includes(s.name));
 
     return {

@@ -11,16 +11,16 @@ type ClassSessionPageProps = {
   params: { id: string; sessionId: string };
 };
 
-export default function ClassSessionPage({ params }: ClassSessionPageProps) {
-  const classInfo = getClass(params.id);
-  const sessionInfo = getSession(parseInt(params.sessionId, 10));
+export default async function ClassSessionPage({ params }: ClassSessionPageProps) {
+  const classInfo = await getClass(params.id);
+  const sessionInfo = await getSession(parseInt(params.sessionId, 10));
   
   if (!classInfo || !sessionInfo) {
     notFound();
   }
 
-  const students = getStudentsForClass(params.id);
-  const subject = getSubject(classInfo.subjectId);
+  const students = await getStudentsForClass(params.id);
+  const subject = await getSubject(classInfo.subjectId);
 
   const initialRoster = students.map(student => ({
     ...student,
