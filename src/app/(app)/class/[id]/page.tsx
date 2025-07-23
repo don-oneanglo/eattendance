@@ -33,12 +33,12 @@ export default function ClassPage({ params }: ClassPageProps) {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 flex-1">
+      <div className="grid md:grid-cols-[auto,1fr] gap-8 flex-1">
         <div className="flex flex-col gap-4">
-            <h2 className="text-2xl font-bold font-headline">Face Scanner</h2>
+            <h2 className="text-2xl font-bold font-headline text-center md:text-left">Face Scanner</h2>
             <CameraView classId={classInfo.id} />
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-w-0">
             <h2 className="text-2xl font-bold font-headline">Attendance Roster</h2>
             <StudentRoster initialRoster={initialRoster} classId={classInfo.id} />
         </div>

@@ -106,8 +106,8 @@ export function CameraView({ classId }: CameraViewProps) {
 
 
   return (
-    <Card className="flex-1 flex flex-col p-4 gap-4">
-      <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-secondary border border-dashed flex items-center justify-center">
+    <Card className="flex-1 flex flex-col p-4 gap-4 max-w-sm mx-auto w-full">
+      <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden bg-secondary border border-dashed flex items-center justify-center">
         <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
         <div className="absolute w-[calc(100%-2rem)] h-[calc(100%-2rem)] border-4 border-white/50 rounded-lg z-20 pointer-events-none"></div>
 
