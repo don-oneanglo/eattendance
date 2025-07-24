@@ -2,7 +2,62 @@
 
 import { autoAttendance } from "@/ai/flows/auto-attendance";
 import { authenticateTeacher } from "@/ai/flows/authenticate-teacher";
+import { registerFaceFlow } from "@/ai/flows/register-face";
 import { getStudentsForClass, getAllTeachers } from "./mock-data";
+import { getConnection } from './db';
+import type { Student, Teacher } from './types';
+
+
+// Student Actions
+export async function addStudent(student: Omit<Student, 'id' | 'avatarUrl'>) {
+    try {
+        const db = await getConnection();
+        await db
+            .input('studentCode', student.studentCode)
+            .input('nickname', student.nickname)
+            .input('name', student.name)
+            .input('email', student.email)
+            .input('campus', student.campus)
+            .input('form', student.form)
+            .query(`INSERT INTO Student (StudentCode, StudentNickname, StudentName, EmailAddress, Campus, Form) 
+                    VALUES (@studentCode, @nickname, @name, @email, @campus, @form)`);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error adding student:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+
+// Face Registration Action
+export async function registerFace(input: {
+    personType: 'student' | 'teacher';
+    personCode: string;
+    imageData: string;
+    originalName: string;
+}) {
+    try {
+        const result = await registerFaceFlow({
+            personType: input.personType,
+            personCode: input.personCode,
+            imageDataUri: input.imageData,
+            originalName: input.originalName,
+        });
+
+        if (result.success) {
+            return { success: true };
+        } else {
+            return { success: false, error: "Failed to save face data via flow." };
+        }
+    } catch (error) {
+        console.error("Error registering face:", error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : "An unknown error occurred.",
+        };
+    }
+}
+
 
 export async function runAutoAttendance(classId: string, imageDataUris: string[]) {
   try {

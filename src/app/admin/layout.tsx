@@ -15,7 +15,7 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar";
 import { Logo } from "@/components/icons/logo";
-import { Home, Users, UserCog, BookText, School, ChevronLeft } from "lucide-react";
+import { Home, Users, UserCog, BookText, School, ChevronLeft, ScanFace } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
@@ -24,6 +24,7 @@ const menuItems = [
   { href: "/admin/teachers", label: "Teachers", icon: UserCog },
   { href: "/admin/subjects", label: "Subjects", icon: BookText },
   { href: "/admin/classes", label: "Classes", icon: School },
+  { href: "/admin/face-registration", label: "Face Registration", icon: ScanFace },
 ];
 
 export default function AdminLayout({
