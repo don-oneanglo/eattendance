@@ -5,20 +5,40 @@ const sqlConfig = {
   user: 'u311154254_TADB',
   password: 'Anglo!123456',
   database: 'u311154254_TestAttendance',
+  connectTimeout: 20000, // 20 seconds
 };
 
 let pool: mysql.Pool;
 
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 2000; // 2 seconds
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function getConnection() {
-  if (!pool) {
+  if (pool) {
+    return pool;
+  }
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       pool = mysql.createPool(sqlConfig);
-    } catch (err) {
-      console.error('Database connection failed:', err);
-      // The app will not be able to function without a DB connection.
-      // You can add more robust error handling here.
-      throw new Error('Failed to connect to the database.');
+      // Try to get a connection to see if the pool is valid
+      const connection = await pool.getConnection();
+      connection.release();
+      console.log('Database connection successful!');
+      return pool;
+    } catch (err: any) {
+      console.error(`Database connection attempt ${attempt} failed:`, err.message);
+      if (attempt === MAX_RETRIES) {
+        throw new Error(`Failed to connect to the database after ${MAX_RETRIES} attempts.`);
+      }
+      console.log(`Retrying in ${RETRY_DELAY / 1000} seconds...`);
+      await sleep(RETRY_DELAY);
     }
   }
-  return pool;
+  // This line should be unreachable, but typescript needs it to know a value is always returned.
+  throw new Error('Failed to connect to the database.');
 }
