@@ -29,6 +29,7 @@ export async function createSession(teacherId: string) {
         maxAge: 60 * 60 * 24 * 7, // One week
         path: '/',
     });
+    redirect('/dashboard');
 }
 
 export async function getTeacherFromSession(): Promise<Teacher | null> {

@@ -19,7 +19,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export default function LoginPage() {
   const [isScanning, setIsScanning] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [selectedTeacher, setSelectedTeacher] = useState<string>('');
@@ -77,16 +76,6 @@ export default function LoginPage() {
     }
   }, []);
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isAuthenticated) {
-      timer = setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [isAuthenticated, router]);
-  
   const captureFrame = useCallback(() => {
     if (!videoRef.current) return null;
     const canvas = document.createElement("canvas");
@@ -135,14 +124,14 @@ export default function LoginPage() {
             loginImageDataUri: imageDataUri,
         });
         
-        const teacher = teachers.find(t => t.teacherCode === selectedTeacher);
-
         if (result.isMatch) {
             await createSession(selectedTeacher);
-            setIsAuthenticated(true);
-            toast({
-                title: `Welcome, ${teacher?.name}!`,
-                description: "You have been successfully authenticated.",
+            // The redirection will now be handled by the server action
+            // No need to set client state for it.
+            // A toast can still be nice for feedback, but the redirect is what matters.
+             toast({
+                title: `Welcome!`,
+                description: "You have been successfully authenticated. Redirecting...",
                 variant: "default",
             });
         } else {
@@ -171,13 +160,6 @@ export default function LoginPage() {
   };
 
   const getButtonContent = () => {
-    if (isAuthenticated) {
-      return (
-        <>
-          <CheckCircle className="mr-2 h-5 w-5" /> Authenticated
-        </>
-      );
-    }
     if (isScanning) {
       return (
         <>
@@ -252,7 +234,7 @@ export default function LoginPage() {
                     </div>
                     <Button
                     onClick={handleLogin}
-                    disabled={isScanning || isAuthenticated || !hasCameraPermission}
+                    disabled={isScanning || !hasCameraPermission}
                     className="w-full font-bold text-lg py-6"
                     size="lg"
                     >
