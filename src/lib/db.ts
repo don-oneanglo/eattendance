@@ -5,7 +5,7 @@ const sqlConfig = {
   user: 'u311154254_TADB',
   password: 'Anglo!123456',
   database: 'u311154254_TestAttendance',
-  connectTimeout: 20000, // 20 seconds
+  connectTimeout: 10000, // 10 seconds
 };
 
 let pool: mysql.Pool;
