@@ -2,7 +2,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getConnection } from './db';
+import { getConnection, sql } from './db';
 import type { Student, Teacher, SubjectSet, AppClass } from './types';
 import {
   authenticateTeacher,
@@ -36,9 +36,12 @@ export async function getTeacherFromSession(): Promise<Teacher | null> {
     if (!teacherId) {
         return null;
     }
-    const db = await getConnection();
-    const [rows]: any[] = await db.execute('SELECT * FROM Teacher WHERE TeacherCode = ?', [teacherId]);
-    const teacher = rows[0];
+    const pool = await getConnection();
+    const result = await pool.request()
+        .input('TeacherCode', sql.NVarChar, teacherId)
+        .query('SELECT * FROM Teacher WHERE TeacherCode = @TeacherCode');
+
+    const teacher = result.recordset[0];
     if (!teacher) return null;
      return {
         id: teacher.Id,
@@ -60,10 +63,11 @@ export async function deleteSession() {
 // AI Flow Wrappers
 export async function runTeacherAuthentication(input: AuthenticateTeacherInput): Promise<AuthenticateTeacherOutput> {
     const result = await authenticateTeacher(input);
-    if(result.isMatch){
-        await createSession(input.teacherCode);
-    }
     return result;
+}
+
+export async function handleSuccessfulAuthentication(teacherCode: string) {
+    await createSession(teacherCode);
 }
 
 export async function runAutoAttendance(input: AutoAttendanceInput): Promise<AutoAttendanceOutput> {
@@ -74,12 +78,16 @@ export async function runAutoAttendance(input: AutoAttendanceInput): Promise<Aut
 // Student Actions
 export async function addStudent(student: Omit<Student, 'id' | 'avatarUrl'>) {
     try {
-        const db = await getConnection();
-        await db.execute(
-            `INSERT INTO Student (StudentCode, StudentNickname, StudentName, EmailAddress, Campus, Form) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [student.studentCode, student.nickname, student.name, student.email, student.campus, student.form]
-        );
+        const pool = await getConnection();
+        await pool.request()
+            .input('StudentCode', sql.NVarChar, student.studentCode)
+            .input('StudentNickname', sql.NVarChar, student.nickname)
+            .input('StudentName', sql.NVarChar, student.name)
+            .input('EmailAddress', sql.NVarChar, student.email)
+            .input('Campus', sql.NVarChar, student.campus)
+            .input('Form', sql.NVarChar, student.form)
+            .query(`INSERT INTO Student (StudentCode, StudentNickname, StudentName, EmailAddress, Campus, Form) 
+                    VALUES (@StudentCode, @StudentNickname, @StudentName, @EmailAddress, @Campus, @Form)`);
         revalidatePath("/admin/students");
         return { success: true };
     } catch (error: any) {
@@ -90,18 +98,23 @@ export async function addStudent(student: Omit<Student, 'id' | 'avatarUrl'>) {
 
 export async function updateStudent(id: number, student: Omit<Student, 'id' | 'avatarUrl'>) {
     try {
-        const db = await getConnection();
-        await db.execute(
-            `UPDATE Student 
-             SET StudentCode = ?, 
-                 StudentNickname = ?, 
-                 StudentName = ?, 
-                 EmailAddress = ?, 
-                 Campus = ?, 
-                 Form = ?
-             WHERE Id = ?`,
-            [student.studentCode, student.nickname, student.name, student.email, student.campus, student.form, id]
-        );
+        const pool = await getConnection();
+        await pool.request()
+            .input('Id', sql.Int, id)
+            .input('StudentCode', sql.NVarChar, student.studentCode)
+            .input('StudentNickname', sql.NVarChar, student.nickname)
+            .input('StudentName', sql.NVarChar, student.name)
+            .input('EmailAddress', sql.NVarChar, student.email)
+            .input('Campus', sql.NVarChar, student.campus)
+            .input('Form', sql.NVarChar, student.form)
+            .query(`UPDATE Student 
+                    SET StudentCode = @StudentCode, 
+                        StudentNickname = @StudentNickname, 
+                        StudentName = @StudentName, 
+                        EmailAddress = @EmailAddress, 
+                        Campus = @Campus, 
+                        Form = @Form
+                    WHERE Id = @Id`);
         revalidatePath("/admin/students");
         return { success: true };
     } catch (error: any) {
@@ -112,8 +125,10 @@ export async function updateStudent(id: number, student: Omit<Student, 'id' | 'a
 
 export async function deleteStudent(id: number) {
     try {
-        const db = await getConnection();
-        await db.execute('DELETE FROM Student WHERE Id = ?', [id]);
+        const pool = await getConnection();
+        await pool.request()
+            .input('Id', sql.Int, id)
+            .query('DELETE FROM Student WHERE Id = @Id');
         revalidatePath("/admin/students");
         return { success: true };
     } catch (error: any) {
@@ -124,37 +139,41 @@ export async function deleteStudent(id: number) {
 
 export async function importStudents(students: Omit<Student, 'id' | 'avatarUrl'>[]) {
     try {
-        const db = await getConnection();
-        const connection = await db.getConnection();
-        await connection.beginTransaction();
+        const pool = await getConnection();
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
         try {
             const query = `
-                INSERT INTO Student (StudentCode, StudentName, StudentNickname, EmailAddress, Campus, Form) 
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE 
-                StudentName = VALUES(StudentName), 
-                StudentNickname = VALUES(StudentNickname), 
-                EmailAddress = VALUES(EmailAddress), 
-                Campus = VALUES(Campus), 
-                Form = VALUES(Form)
+                MERGE INTO Student AS Target
+                USING (SELECT @StudentCode AS StudentCode) AS Source
+                ON Target.StudentCode = Source.StudentCode
+                WHEN MATCHED THEN
+                    UPDATE SET 
+                        StudentName = @StudentName, 
+                        StudentNickname = @StudentNickname, 
+                        EmailAddress = @EmailAddress, 
+                        Campus = @Campus, 
+                        Form = @Form
+                WHEN NOT MATCHED THEN
+                    INSERT (StudentCode, StudentName, StudentNickname, EmailAddress, Campus, Form)
+                    VALUES (@StudentCode, @StudentName, @StudentNickname, @EmailAddress, @Campus, @Form);
             `;
+            const request = new sql.Request(transaction);
             for (const student of students) {
-                await connection.execute(query, [
-                    student.studentCode,
-                    student.name,
-                    student.nickname,
-                    student.email,
-                    student.campus,
-                    student.form,
-                ]);
+                await request
+                    .input('StudentCode', sql.NVarChar, student.studentCode)
+                    .input('StudentName', sql.NVarChar, student.name)
+                    .input('StudentNickname', sql.NVarChar, student.nickname)
+                    .input('EmailAddress', sql.NVarChar, student.email)
+                    .input('Campus', sql.NVarChar, student.campus)
+                    .input('Form', sql.NVarChar, student.form)
+                    .query(query);
             }
-            await connection.commit();
-            connection.release();
+            await transaction.commit();
             revalidatePath("/admin/students");
             return { success: true, count: students.length };
         } catch (err) {
-            await connection.rollback();
-            connection.release();
+            await transaction.rollback();
             throw err;
         }
     } catch (error: any) {
@@ -167,12 +186,16 @@ export async function importStudents(students: Omit<Student, 'id' | 'avatarUrl'>
 // Teacher Actions
 export async function addTeacher(teacher: Omit<Teacher, 'id' | 'avatarUrl'>) {
     try {
-        const db = await getConnection();
-        await db.execute(
-            `INSERT INTO Teacher (TeacherCode, TeacherNickname, TeacherName, EmailAddress, Campus, Department) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [teacher.teacherCode, teacher.nickname, teacher.name, teacher.email, teacher.campus, teacher.department]
-        );
+        const pool = await getConnection();
+        await pool.request()
+            .input('TeacherCode', sql.NVarChar, teacher.teacherCode)
+            .input('TeacherNickname', sql.NVarChar, teacher.nickname)
+            .input('TeacherName', sql.NVarChar, teacher.name)
+            .input('EmailAddress', sql.NVarChar, teacher.email)
+            .input('Campus', sql.NVarChar, teacher.campus)
+            .input('Department', sql.NVarChar, teacher.department)
+            .query(`INSERT INTO Teacher (TeacherCode, TeacherNickname, TeacherName, EmailAddress, Campus, Department) 
+                    VALUES (@TeacherCode, @TeacherNickname, @TeacherName, @EmailAddress, @Campus, @Department)`);
         revalidatePath("/admin/teachers");
         return { success: true };
     } catch (error: any)
@@ -184,18 +207,23 @@ export async function addTeacher(teacher: Omit<Teacher, 'id' | 'avatarUrl'>) {
 
 export async function updateTeacher(id: number, teacher: Omit<Teacher, 'id' | 'avatarUrl'>) {
     try {
-        const db = await getConnection();
-        await db.execute(
-            `UPDATE Teacher 
-             SET TeacherCode = ?, 
-                 TeacherNickname = ?, 
-                 TeacherName = ?, 
-                 EmailAddress = ?, 
-                 Campus = ?, 
-                 Department = ?
-             WHERE Id = ?`,
-            [teacher.teacherCode, teacher.nickname, teacher.name, teacher.email, teacher.campus, teacher.department, id]
-        );
+        const pool = await getConnection();
+        await pool.request()
+            .input('Id', sql.Int, id)
+            .input('TeacherCode', sql.NVarChar, teacher.teacherCode)
+            .input('TeacherNickname', sql.NVarChar, teacher.nickname)
+            .input('TeacherName', sql.NVarChar, teacher.name)
+            .input('EmailAddress', sql.NVarChar, teacher.email)
+            .input('Campus', sql.NVarChar, teacher.campus)
+            .input('Department', sql.NVarChar, teacher.department)
+            .query(`UPDATE Teacher 
+                    SET TeacherCode = @TeacherCode, 
+                        TeacherNickname = @TeacherNickname, 
+                        TeacherName = @TeacherName, 
+                        EmailAddress = @EmailAddress, 
+                        Campus = @Campus, 
+                        Department = @Department
+                    WHERE Id = @Id`);
         revalidatePath("/admin/teachers");
         return { success: true };
     } catch (error: any) {
@@ -206,8 +234,10 @@ export async function updateTeacher(id: number, teacher: Omit<Teacher, 'id' | 'a
 
 export async function deleteTeacher(id: number) {
     try {
-        const db = await getConnection();
-        await db.execute('DELETE FROM Teacher WHERE Id = ?', [id]);
+        const pool = await getConnection();
+        await pool.request()
+            .input('Id', sql.Int, id)
+            .query('DELETE FROM Teacher WHERE Id = @Id');
         revalidatePath("/admin/teachers");
         return { success: true };
     } catch (error: any) {
@@ -218,37 +248,41 @@ export async function deleteTeacher(id: number) {
 
 export async function importTeachers(teachers: Omit<Teacher, 'id' | 'avatarUrl'>[]) {
     try {
-        const db = await getConnection();
-        const connection = await db.getConnection();
-        await connection.beginTransaction();
+        const pool = await getConnection();
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
         try {
             const query = `
-                INSERT INTO Teacher (TeacherCode, TeacherName, TeacherNickname, EmailAddress, Campus, Department) 
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE 
-                TeacherName = VALUES(TeacherName), 
-                TeacherNickname = VALUES(TeacherNickname), 
-                EmailAddress = VALUES(EmailAddress), 
-                Campus = VALUES(Campus), 
-                Department = VALUES(Department)
+                MERGE INTO Teacher AS Target
+                USING (SELECT @TeacherCode AS TeacherCode) AS Source
+                ON Target.TeacherCode = Source.TeacherCode
+                WHEN MATCHED THEN
+                    UPDATE SET 
+                        TeacherName = @TeacherName, 
+                        TeacherNickname = @TeacherNickname, 
+                        EmailAddress = @EmailAddress, 
+                        Campus = @Campus, 
+                        Department = @Department
+                WHEN NOT MATCHED THEN
+                    INSERT (TeacherCode, TeacherName, TeacherNickname, EmailAddress, Campus, Department)
+                    VALUES (@TeacherCode, @TeacherName, @TeacherNickname, @EmailAddress, @Campus, @Department);
             `;
+            const request = new sql.Request(transaction);
             for (const teacher of teachers) {
-                await connection.execute(query, [
-                    teacher.teacherCode,
-                    teacher.name,
-                    teacher.nickname,
-                    teacher.email,
-                    teacher.campus,
-                    teacher.department,
-                ]);
+                await request
+                    .input('TeacherCode', sql.NVarChar, teacher.teacherCode)
+                    .input('TeacherName', sql.NVarChar, teacher.name)
+                    .input('TeacherNickname', sql.NVarChar, teacher.nickname)
+                    .input('EmailAddress', sql.NVarChar, teacher.email)
+                    .input('Campus', sql.NVarChar, teacher.campus)
+                    .input('Department', sql.NVarChar, teacher.department)
+                    .query(query);
             }
-            await connection.commit();
-            connection.release();
+            await transaction.commit();
             revalidatePath("/admin/teachers");
             return { success: true, count: teachers.length };
         } catch (err) {
-            await connection.rollback();
-            connection.release();
+            await transaction.rollback();
             throw err;
         }
     } catch (error: any) {
@@ -260,12 +294,15 @@ export async function importTeachers(teachers: Omit<Teacher, 'id' | 'avatarUrl'>
 // Subject Actions
 export async function addSubject(subject: Omit<SubjectSet, 'id'>) {
     try {
-        const db = await getConnection();
-        await db.execute(
-            `INSERT INTO SubjectSet (Campus, SubjectSetID, Subject, SubjectSetDescription, Credits) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [subject.campus, subject.subjectSetId, subject.subject, subject.description, subject.credits]
-        );
+        const pool = await getConnection();
+        await pool.request()
+            .input('Campus', sql.NVarChar, subject.campus)
+            .input('SubjectSetID', sql.NVarChar, subject.subjectSetId)
+            .input('Subject', sql.NVarChar, subject.subject)
+            .input('SubjectSetDescription', sql.NVarChar, subject.description)
+            .input('Credits', sql.Int, subject.credits)
+            .query(`INSERT INTO SubjectSet (Campus, SubjectSetID, Subject, SubjectSetDescription, Credits) 
+                    VALUES (@Campus, @SubjectSetID, @Subject, @SubjectSetDescription, @Credits)`);
         revalidatePath("/admin/subjects");
         return { success: true };
     } catch (error: any) {
@@ -276,17 +313,21 @@ export async function addSubject(subject: Omit<SubjectSet, 'id'>) {
 
 export async function updateSubject(id: number, subject: Omit<SubjectSet, 'id'>) {
     try {
-        const db = await getConnection();
-        await db.execute(
-            `UPDATE SubjectSet 
-             SET Campus = ?, 
-                 SubjectSetID = ?, 
-                 Subject = ?, 
-                 SubjectSetDescription = ?,
-                 Credits = ?
-             WHERE Id = ?`,
-            [subject.campus, subject.subjectSetId, subject.subject, subject.description, subject.credits, id]
-        );
+        const pool = await getConnection();
+        await pool.request()
+            .input('Id', sql.Int, id)
+            .input('Campus', sql.NVarChar, subject.campus)
+            .input('SubjectSetID', sql.NVarChar, subject.subjectSetId)
+            .input('Subject', sql.NVarChar, subject.subject)
+            .input('SubjectSetDescription', sql.NVarChar, subject.description)
+            .input('Credits', sql.Int, subject.credits)
+            .query(`UPDATE SubjectSet 
+                    SET Campus = @Campus, 
+                        SubjectSetID = @SubjectSetID, 
+                        Subject = @Subject, 
+                        SubjectSetDescription = @SubjectSetDescription,
+                        Credits = @Credits
+                    WHERE Id = @Id`);
         revalidatePath("/admin/subjects");
         return { success: true };
     } catch (error: any) {
@@ -297,9 +338,10 @@ export async function updateSubject(id: number, subject: Omit<SubjectSet, 'id'>)
 
 export async function deleteSubject(id: number) {
     try {
-        const db = await getConnection();
-        // You might want to handle related classes first
-        await db.execute('DELETE FROM SubjectSet WHERE Id = ?', [id]);
+        const pool = await getConnection();
+        await pool.request()
+            .input('Id', sql.Int, id)
+            .query('DELETE FROM SubjectSet WHERE Id = @Id');
         revalidatePath("/admin/subjects");
         revalidatePath("/admin/classes");
         return { success: true };
@@ -311,35 +353,39 @@ export async function deleteSubject(id: number) {
 
 export async function importSubjects(subjects: Omit<SubjectSet, 'id'>[]) {
     try {
-        const db = await getConnection();
-        const connection = await db.getConnection();
-        await connection.beginTransaction();
+        const pool = await getConnection();
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
         try {
             const query = `
-                INSERT INTO SubjectSet (SubjectSetID, Subject, SubjectSetDescription, Campus, Credits)
-                VALUES (?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                Subject = VALUES(Subject),
-                SubjectSetDescription = VALUES(SubjectSetDescription),
-                Campus = VALUES(Campus),
-                Credits = VALUES(Credits)
+                MERGE INTO SubjectSet AS Target
+                USING (SELECT @SubjectSetID AS SubjectSetID) AS Source
+                ON Target.SubjectSetID = Source.SubjectSetID
+                WHEN MATCHED THEN
+                    UPDATE SET
+                        Subject = @Subject,
+                        SubjectSetDescription = @Description,
+                        Campus = @Campus,
+                        Credits = @Credits
+                WHEN NOT MATCHED THEN
+                    INSERT (SubjectSetID, Subject, SubjectSetDescription, Campus, Credits)
+                    VALUES (@SubjectSetID, @Subject, @Description, @Campus, @Credits);
             `;
+            const request = new sql.Request(transaction);
             for (const subject of subjects) {
-                await connection.execute(query, [
-                    subject.subjectSetId,
-                    subject.subject,
-                    subject.description,
-                    subject.campus,
-                    subject.credits,
-                ]);
+                await request
+                    .input('SubjectSetID', sql.NVarChar, subject.subjectSetId)
+                    .input('Subject', sql.NVarChar, subject.subject)
+                    .input('Description', sql.NVarChar, subject.description)
+                    .input('Campus', sql.NVarChar, subject.campus)
+                    .input('Credits', sql.Int, subject.credits)
+                    .query(query);
             }
-            await connection.commit();
-            connection.release();
+            await transaction.commit();
             revalidatePath("/admin/subjects");
             return { success: true, count: subjects.length };
         } catch (err) {
-            await connection.rollback();
-            connection.release();
+            await transaction.rollback();
             throw err;
         }
     } catch (error: any) {
@@ -352,38 +398,45 @@ export async function importSubjects(subjects: Omit<SubjectSet, 'id'>[]) {
 // Class Actions
 export async function updateClass(classId: string, teacherId: string, studentIds: string[]) {
      try {
-        const db = await getConnection();
-        const connection = await db.getConnection(); // Use a single connection for transaction
-        await connection.beginTransaction();
+        const pool = await getConnection();
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
 
         try {
             // Delete existing students for the class
-            await connection.execute('DELETE FROM Class WHERE SubjectSetID = ?', [classId]);
+            const deleteRequest = new sql.Request(transaction);
+            await deleteRequest
+                .input('SubjectSetID', sql.NVarChar, classId)
+                .query('DELETE FROM Class WHERE SubjectSetID = @SubjectSetID');
 
             // Get campus from subject
-            const [subjectRows]: any[] = await connection.execute('SELECT Campus FROM SubjectSet WHERE SubjectSetID = ?', [classId]);
+            const subjectRequest = new sql.Request(transaction);
+            const subjectResult = await subjectRequest
+                .input('SubjectSetID', sql.NVarChar, classId)
+                .query('SELECT Campus FROM SubjectSet WHERE SubjectSetID = @SubjectSetID');
             
-            if (subjectRows.length === 0) {
+            if (subjectResult.recordset.length === 0) {
                 throw new Error("Subject not found, cannot determine campus.");
             }
-            const campus = subjectRows[0].Campus;
+            const campus = subjectResult.recordset[0].Campus;
 
             // Add the updated students
+            const insertRequest = new sql.Request(transaction);
             for (const studentId of studentIds) {
-                await connection.execute(
-                    'INSERT INTO Class (Campus, SubjectSetID, TeacherCode, StudentCode) VALUES (?, ?, ?, ?)',
-                    [campus, classId, teacherId, studentId]
-                );
+                await insertRequest
+                    .input('Campus', sql.NVarChar, campus)
+                    .input('SubjectSetID', sql.NVarChar, classId)
+                    .input('TeacherCode', sql.NVarChar, teacherId)
+                    .input('StudentCode', sql.NVarChar, studentId)
+                    .query('INSERT INTO Class (Campus, SubjectSetID, TeacherCode, StudentCode) VALUES (@Campus, @SubjectSetID, @TeacherCode, @StudentCode)');
             }
             
-            await connection.commit();
-            connection.release();
+            await transaction.commit();
 
             revalidatePath("/admin/classes");
             return { success: true };
         } catch (err) {
-            await connection.rollback();
-            connection.release();
+            await transaction.rollback();
             throw err; // Re-throw error after rolling back
         }
     } catch (error: any) {
@@ -395,8 +448,10 @@ export async function updateClass(classId: string, teacherId: string, studentIds
 
 export async function deleteClass(classId: string) {
     try {
-        const db = await getConnection();
-        await db.execute('DELETE FROM Class WHERE SubjectSetID = ?', [classId]);
+        const pool = await getConnection();
+        await pool.request()
+            .input('SubjectSetID', sql.NVarChar, classId)
+            .query('DELETE FROM Class WHERE SubjectSetID = @SubjectSetID');
         revalidatePath("/admin/classes");
         return { success: true };
     } catch (error: any) {
@@ -407,37 +462,41 @@ export async function deleteClass(classId: string) {
 
 export async function importClasses(classes: { SubjectSetID: string, TeacherCode: string, StudentCode: string, Campus: string }[]) {
     try {
-        const db = await getConnection();
-        const connection = await db.getConnection();
-        await connection.beginTransaction();
+        const pool = await getConnection();
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
         try {
             // It's safer to delete all existing enrollments for the subjects being imported
             // to avoid leaving orphaned records.
             const subjectSetIDs = [...new Set(classes.map(c => c.SubjectSetID))];
             if (subjectSetIDs.length > 0) {
-                 const placeholders = subjectSetIDs.map(() => '?').join(',');
-                 await connection.execute(`DELETE FROM Class WHERE SubjectSetID IN (${placeholders})`, subjectSetIDs);
+                 const deleteRequest = new sql.Request(transaction);
+                 // mssql doesn't support array binding directly, need to create parameter list
+                 const subjectParams = subjectSetIDs.map((_, i) => `@subjectId${i}`).join(',');
+                 subjectSetIDs.forEach((id, i) => {
+                     deleteRequest.input(`subjectId${i}`, sql.NVarChar, id);
+                 });
+                 await deleteRequest.query(`DELETE FROM Class WHERE SubjectSetID IN (${subjectParams})`);
             }
 
             const query = `
                 INSERT INTO Class (Campus, SubjectSetID, TeacherCode, StudentCode)
-                VALUES (?, ?, ?, ?)
+                VALUES (@Campus, @SubjectSetID, @TeacherCode, @StudentCode)
             `;
+            const request = new sql.Request(transaction);
             for (const cls of classes) {
-                await connection.execute(query, [
-                    cls.Campus,
-                    cls.SubjectSetID,
-                    cls.TeacherCode,
-                    cls.StudentCode,
-                ]);
+                await request
+                    .input('Campus', sql.NVarChar, cls.Campus)
+                    .input('SubjectSetID', sql.NVarChar, cls.SubjectSetID)
+                    .input('TeacherCode', sql.NVarChar, cls.TeacherCode)
+                    .input('StudentCode', sql.NVarChar, cls.StudentCode)
+                    .query(query);
             }
-            await connection.commit();
-            connection.release();
+            await transaction.commit();
             revalidatePath("/admin/classes");
             return { success: true, count: classes.length };
         } catch (err) {
-            await connection.rollback();
-            connection.release();
+            await transaction.rollback();
             throw err;
         }
     } catch (error: any) {

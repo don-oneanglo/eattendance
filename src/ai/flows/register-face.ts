@@ -10,7 +10,7 @@
 
 import { ai } from "@/ai/genkit";
 import { z } from "genkit";
-import { getConnection } from "@/lib/db";
+import { getConnection, sql } from "@/lib/db";
 
 const RegisterFaceInputSchema = z.object({
   personType: z.enum(["student", "teacher"]),
@@ -48,13 +48,29 @@ export const registerFaceFlow = ai.defineFlow(
       const base64Data = imageDataUri.split(",")[1];
       const imageBuffer = Buffer.from(base64Data, 'base64');
 
-      const db = await getConnection();
-      await db.execute(
-          `INSERT INTO FaceData (PersonType, PersonCode, ImageData, OriginalName, ContentType) 
-           VALUES (?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE ImageData = VALUES(ImageData), OriginalName = VALUES(OriginalName), ContentType = VALUES(ContentType)`,
-          [personType, personCode, imageBuffer, originalName, contentType]
-        );
+      const pool = await getConnection();
+      
+      const query = `
+        MERGE INTO FaceData AS Target
+        USING (SELECT @PersonType AS PersonType, @PersonCode AS PersonCode) AS Source
+        ON Target.PersonType = Source.PersonType AND Target.PersonCode = Source.PersonCode
+        WHEN MATCHED THEN
+          UPDATE SET 
+            ImageData = @ImageData, 
+            OriginalName = @OriginalName, 
+            ContentType = @ContentType
+        WHEN NOT MATCHED THEN
+          INSERT (PersonType, PersonCode, ImageData, OriginalName, ContentType)
+          VALUES (@PersonType, @PersonCode, @ImageData, @OriginalName, @ContentType);
+      `;
+
+      await pool.request()
+          .input('PersonType', sql.NVarChar, personType)
+          .input('PersonCode', sql.NVarChar, personCode)
+          .input('ImageData', sql.VarBinary, imageBuffer)
+          .input('OriginalName', sql.NVarChar, originalName)
+          .input('ContentType', sql.NVarChar, contentType)
+          .query(query);
 
       return { success: true };
     } catch (error) {

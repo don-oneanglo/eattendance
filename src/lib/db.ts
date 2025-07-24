@@ -1,15 +1,23 @@
-import mysql from 'mysql2/promise';
+import sql from 'mssql';
 
 const sqlConfig = {
-  host: 'srv1521.hstgr.io',
+  server: 'srv1521.hstgr.io',
   user: 'u311154254_TADB',
   password: 'Anglo!123456',
   database: 'u311154254_TestAttendance',
-  connectTimeout: 10000, // 10 seconds
-  connectionLimit: 10, // Explicitly limit the number of connections
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  },
+  options: {
+    encrypt: true, // For Azure
+    trustServerCertificate: true, // Change to true for local dev / self-signed certs
+    connectionTimeout: 30000, // 30 seconds
+  }
 };
 
-let pool: mysql.Pool;
+let pool: sql.ConnectionPool;
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 2000; // 2 seconds
@@ -25,14 +33,16 @@ export async function getConnection() {
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      pool = mysql.createPool(sqlConfig);
-      // Try to get a connection to see if the pool is valid
-      const connection = await pool.getConnection();
-      connection.release();
+      pool = new sql.ConnectionPool(sqlConfig);
+      await pool.connect();
       console.log('Database connection successful!');
       return pool;
     } catch (err: any) {
       console.error(`Database connection attempt ${attempt} failed:`, err.message);
+      if (pool) {
+        // Ensure pool is closed on failure
+        await pool.close();
+      }
       if (attempt === MAX_RETRIES) {
         throw new Error(`Failed to connect to the database after ${MAX_RETRIES} attempts.`);
       }
@@ -43,3 +53,6 @@ export async function getConnection() {
   // This line should be unreachable, but typescript needs it to know a value is always returned.
   throw new Error('Failed to connect to the database.');
 }
+
+// Export sql object for use in transactions and queries
+export { sql };

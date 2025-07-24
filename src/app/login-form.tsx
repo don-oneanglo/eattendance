@@ -12,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { runTeacherAuthentication, createSession } from "@/lib/actions";
+import { runTeacherAuthentication, handleSuccessfulAuthentication } from "@/lib/actions";
 import { Teacher } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -107,7 +107,7 @@ export function LoginForm({ teachers }: { teachers: Teacher[] }) {
         });
         
         if (result.isMatch) {
-            await createSession(selectedTeacher);
+            await handleSuccessfulAuthentication(selectedTeacher);
         } else {
              setIsScanning(false);
              toast({
@@ -116,7 +116,7 @@ export function LoginForm({ teachers }: { teachers: Teacher[] }) {
                 variant: "destructive",
             });
         }
-    } catch(error) {
+    } catch(error: any) {
         setIsScanning(false);
         console.error("Error during teacher authentication:", error);
         if (error.message.includes('NEXT_REDIRECT')) {

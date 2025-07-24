@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getConnection } from '@/lib/db';
+import { getConnection, sql } from '@/lib/db';
 
 const AuthenticateTeacherInputSchema = z.object({
   teacherCode: z.string().describe("The unique code of the teacher trying to log in."),
@@ -66,17 +66,17 @@ const authenticateTeacherFlow = ai.defineFlow(
   async ({ teacherCode, loginImageDataUri }) => {
     
     // 1. Fetch the registered face data from the database
-    const db = await getConnection();
-    const [rows]: any[] = await db.execute(
-        'SELECT ImageData, ContentType FROM FaceData WHERE PersonCode = ? AND PersonType = ?',
-        [teacherCode, 'teacher']
-    );
+    const pool = await getConnection();
+    const result = await pool.request()
+        .input('PersonCode', sql.NVarChar, teacherCode)
+        .input('PersonType', sql.NVarChar, 'teacher')
+        .query('SELECT ImageData, ContentType FROM FaceData WHERE PersonCode = @PersonCode AND PersonType = @PersonType');
 
-    if (rows.length === 0) {
+    if (result.recordset.length === 0) {
         throw new Error(`No registered face found for teacher ${teacherCode}. Please register the teacher's face first.`);
     }
 
-    const faceData = rows[0];
+    const faceData = result.recordset[0];
     const registeredImageData = Buffer.from(faceData.ImageData).toString('base64');
     const registeredImageMimeType = faceData.ContentType;
     const registeredImageDataUri = `data:${registeredImageMimeType};base64,${registeredImageData}`;
