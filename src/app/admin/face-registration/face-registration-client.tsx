@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader, CameraOff, ScanFace, Check, UserCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { registerFace } from "@/lib/actions";
+import { registerFaceFlow } from "@/ai/flows/register-face";
 import { Student, Teacher } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -110,28 +110,38 @@ export function FaceRegistrationClient({ students, teachers }: FaceRegistrationC
         return;
     }
     
-    const result = await registerFace({
-        personType,
-        personCode: selectedPerson,
-        imageData: imageDataUri,
-        originalName: person.name,
-    });
-    
-    setIsLoading(false);
+    try {
+        const result = await registerFaceFlow({
+            personType,
+            personCode: selectedPerson,
+            imageDataUri: imageDataUri,
+            originalName: person.name,
+        });
+        
+        setIsLoading(false);
 
-    if (result.success) {
-      setIsRegistered(true);
-      toast({
-        title: "Face Registered!",
-        description: `Successfully registered face for ${person.name}.`,
-      });
-      setTimeout(() => setIsRegistered(false), 3000);
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: result.error || "An unknown error occurred.",
-      });
+        if (result.success) {
+          setIsRegistered(true);
+          toast({
+            title: "Face Registered!",
+            description: `Successfully registered face for ${person.name}.`,
+          });
+          setTimeout(() => setIsRegistered(false), 3000);
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: "An unknown error occurred during registration flow.",
+          });
+        }
+    } catch (error) {
+        setIsLoading(false);
+        console.error("Error calling registerFaceFlow:", error);
+        toast({
+            variant: "destructive",
+            title: "Registration Error",
+            description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        });
     }
   };
 
