@@ -119,7 +119,7 @@ export async function runTeacherAuthentication(imageDataUri: string) {
 
     return {
       success: false,
-      error: "Face not recognized.",
+      error: "Unregistered person. Please register first.",
     };
 
   } catch (error) {
