@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -53,6 +54,54 @@ export async function updateStudent(id: number, student: Omit<Student, 'id' | 'a
         return { success: true };
     } catch (error: any) {
         console.error('Error updating student:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+// Teacher Actions
+export async function addTeacher(teacher: Omit<Teacher, 'id' | 'avatarUrl'>) {
+    try {
+        const db = await getConnection();
+        await db
+            .input('teacherCode', teacher.teacherCode)
+            .input('nickname', teacher.nickname)
+            .input('name', teacher.name)
+            .input('email', teacher.email)
+            .input('campus', teacher.campus)
+            .input('department', teacher.department)
+            .query(`INSERT INTO Teacher (TeacherCode, TeacherNickname, TeacherName, EmailAddress, Campus, Department) 
+                    VALUES (@teacherCode, @nickname, @name, @email, @campus, @department)`);
+        revalidatePath("/admin/teachers");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error adding teacher:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+export async function updateTeacher(id: number, teacher: Omit<Teacher, 'id' | 'avatarUrl'>) {
+    try {
+        const db = await getConnection();
+        await db
+            .input('id', id)
+            .input('teacherCode', teacher.teacherCode)
+            .input('nickname', teacher.nickname)
+            .input('name', teacher.name)
+            .input('email', teacher.email)
+            .input('campus', teacher.campus)
+            .input('department', teacher.department)
+            .query(`UPDATE Teacher 
+                    SET TeacherCode = @teacherCode, 
+                        TeacherNickname = @nickname, 
+                        TeacherName = @name, 
+                        EmailAddress = @email, 
+                        Campus = @campus, 
+                        Department = @department
+                    WHERE Id = @id`);
+        revalidatePath("/admin/teachers");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating teacher:', error);
         return { success: false, error: error.message || "An unknown error occurred." };
     }
 }

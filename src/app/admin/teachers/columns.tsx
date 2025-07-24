@@ -1,8 +1,17 @@
+
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { Teacher } from "@/lib/types"
+import { EditTeacherForm } from "./edit-teacher-form"
 
 export const columns: ColumnDef<Teacher>[] = [
   {
@@ -60,27 +70,40 @@ export const columns: ColumnDef<Teacher>[] = [
 
       return (
         <div className="text-right">
-            <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(teacher.teacherCode)}
-                >
-                Copy teacher ID
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Edit Teacher</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                    Delete Teacher
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-            </DropdownMenu>
+             <Dialog>
+                <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                    <span className="sr-only">Open menu</span>
+                    <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem
+                    onClick={() => navigator.clipboard.writeText(teacher.teacherCode)}
+                    >
+                    Copy teacher ID
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DialogTrigger asChild>
+                        <DropdownMenuItem>Edit Teacher</DropdownMenuItem>
+                    </DialogTrigger>
+                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                        Delete Teacher
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+                </DropdownMenu>
+                 <DialogContent>
+                    <DialogHeader>
+                    <DialogTitle>Edit Teacher</DialogTitle>
+                    <DialogDescription>
+                        Update the details for {teacher.name}.
+                    </DialogDescription>
+                    </DialogHeader>
+                    <EditTeacherForm teacher={teacher} />
+                </DialogContent>
+            </Dialog>
         </div>
       )
     },
