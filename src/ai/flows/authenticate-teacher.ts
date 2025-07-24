@@ -74,7 +74,7 @@ const authenticateTeacherFlow = ai.defineFlow(
         knownTeacherList: teacherNames
     });
 
-    if (!output) {
+    if (!output || !output.isRegistered) {
       return { isRegistered: false };
     }
 
