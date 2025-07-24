@@ -36,10 +36,8 @@ import { deleteClass } from "@/lib/actions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 import { EditClassForm } from "./edit-class-form"
-import { getAllStudents, getAllTeachers } from "@/lib/mock-data"
 
-
-type ProcessedClass = AppClass & { teacherName: string, subjectName: string, studentCount: number }
+export type ProcessedClass = AppClass & { teacherName: string, subjectName: string, studentCount: number }
 
 type ActionCellProps = {
     row: { original: ProcessedClass };

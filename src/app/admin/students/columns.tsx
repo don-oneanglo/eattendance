@@ -39,7 +39,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 
 
-export const columns: ColumnDef<Student>[] = [
+export const getColumns = (): ColumnDef<Student>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => {

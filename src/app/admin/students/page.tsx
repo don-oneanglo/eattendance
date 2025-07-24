@@ -1,7 +1,5 @@
 
 import { getAllStudents } from "@/lib/mock-data";
-import { columns } from "./columns";
-import { DataTable } from "@/components/common/data-table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { AddStudentForm } from "./add-student-form";
@@ -14,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ImportStudents } from "./import-students";
+import { StudentTableClient } from "./student-table-client";
 
 export default async function StudentsAdminPage() {
   const students = await getAllStudents();
@@ -45,7 +44,7 @@ export default async function StudentsAdminPage() {
             </Dialog>
         </div>
       </div>
-      <DataTable columns={columns} data={students} filterColumn="name" />
+      <StudentTableClient data={students} />
     </div>
   );
 }

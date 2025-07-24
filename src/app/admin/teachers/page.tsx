@@ -1,7 +1,5 @@
 
 import { getAllTeachers } from "@/lib/mock-data"
-import { columns } from "./columns"
-import { DataTable } from "@/components/common/data-table" 
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { AddTeacherForm } from "./add-teacher-form";
@@ -14,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ImportTeachers } from "./import-teachers";
+import { TeacherTableClient } from "./teacher-table-client";
 
 
 export default async function TeachersAdminPage() {
@@ -46,7 +45,7 @@ export default async function TeachersAdminPage() {
             </Dialog>
         </div>
       </div>
-      <DataTable columns={columns} data={teachers} filterColumn="name" />
+      <TeacherTableClient data={teachers} />
     </div>
   )
 }

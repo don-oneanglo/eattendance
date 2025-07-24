@@ -37,7 +37,7 @@ import { deleteSubject } from "@/lib/actions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 
-export const columns: ColumnDef<SubjectSet>[] = [
+export const getColumns = (): ColumnDef<SubjectSet>[] => [
   {
     accessorKey: "subject",
     header: ({ column }) => {

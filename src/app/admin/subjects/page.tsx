@@ -1,7 +1,5 @@
 
 import { getAllSubjects } from "@/lib/mock-data"
-import { columns } from "./columns"
-import { DataTable } from "@/components/common/data-table" 
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { AddSubjectForm } from "./add-subject-form";
@@ -14,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ImportSubjects } from "./import-subjects";
+import { SubjectTableClient } from "./subject-table-client";
 
 
 export default async function SubjectsAdminPage() {
@@ -46,7 +45,7 @@ export default async function SubjectsAdminPage() {
             </Dialog>
         </div>
       </div>
-      <DataTable columns={columns} data={subjects} filterColumn="subject" />
+      <SubjectTableClient data={subjects} />
     </div>
   )
 }

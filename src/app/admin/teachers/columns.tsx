@@ -38,7 +38,7 @@ import { deleteTeacher } from "@/lib/actions"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
 
-export const columns: ColumnDef<Teacher>[] = [
+export const getColumns = (): ColumnDef<Teacher>[] => [
   {
     accessorKey: "name",
     header: ({ column }) => {
