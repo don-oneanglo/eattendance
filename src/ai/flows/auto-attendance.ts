@@ -46,7 +46,7 @@ Student Photos:
 
 Enrolled Students: {{{knownStudentList}}}
 
-Present Students:`, // The prompt is updated to include the list of enrolled students
+Present Students:`,
 });
 
 const autoAttendanceFlow = ai.defineFlow(
