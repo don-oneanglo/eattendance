@@ -11,8 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { runTeacherAuthentication } from "@/lib/actions";
-
+import { authenticateTeacher } from "@/ai/flows/authenticate-teacher";
 
 export default function LoginPage() {
   const [isScanning, setIsScanning] = useState(false);
@@ -98,40 +97,48 @@ export default function LoginPage() {
       return;
     }
     
-    const result = await runTeacherAuthentication(imageDataUri);
-    setIsScanning(false);
-    
-    if (result.success && result.teacher) {
-        setIsAuthenticated(true);
-        toast({
-            title: `Welcome, ${result.teacher.name}!`,
-            description: "You have been successfully authenticated.",
-            variant: "default",
+    try {
+        const result = await authenticateTeacher({
+            teacherImageDataUri: imageDataUri,
         });
-    } else {
-      toast({
-        title: "Authentication Failed",
-        description: result.error || "Could not recognize your face. Please try again.",
-        variant: "destructive",
-      });
+        
+        setIsScanning(false);
+
+        if (result.isRegistered && result.teacherName) {
+            setIsAuthenticated(true);
+            toast({
+                title: `Welcome, ${result.teacherName}!`,
+                description: "You have been successfully authenticated.",
+                variant: "default",
+            });
+        } else if (!result.isRegistered) {
+            toast({
+                title: "Authentication Failed",
+                description: "Unregistered person. Please register first.",
+                variant: "destructive",
+            });
+        } else {
+             toast({
+                title: "Authentication Failed",
+                description: "Could not recognize your face. Please try again.",
+                variant: "destructive",
+            });
+        }
+    } catch(error) {
+        setIsScanning(false);
+        console.error("Error during teacher authentication:", error);
+        toast({
+            title: "Authentication Error",
+            description: error instanceof Error ? error.message : "An unexpected error occurred during authentication.",
+            variant: "destructive",
+        });
     }
 
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // This is a basic client-side check. 
-    // The actual security is handled by the middleware.
-    if (username === 'super-it' && password === 'F!123w@77') {
-      // The middleware will intercept this navigation and prompt for credentials.
-      router.push('/admin');
-    } else {
-      toast({
-        title: 'Invalid Credentials',
-        description: 'The username or password you entered is incorrect.',
-        variant: 'destructive'
-      });
-    }
+    router.push('/admin');
   };
 
   const getButtonContent = () => {

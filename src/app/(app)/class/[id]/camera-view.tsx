@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader, Sparkles, CameraOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { runAutoAttendance } from "@/lib/actions";
+import { autoAttendance } from "@/ai/flows/auto-attendance";
 
 type CameraViewProps = {
   classId: string;
@@ -100,32 +100,38 @@ export function CameraView({ classId }: CameraViewProps) {
       return;
     }
     
-    const result = await runAutoAttendance(classId, frames);
-    setIsLoading(false);
-    setScanProgress(0);
+    try {
+        const result = await autoAttendance({
+            classId: classId,
+            studentImageDataUris: frames,
+        });
 
-    if (result.success && result.presentStudents) {
-      const presentNames = result.presentStudents;
-      if (presentNames.length > 0) {
+        setIsLoading(false);
+        setScanProgress(0);
+        
+        const presentNames = result.presentStudents;
+        if (presentNames.length > 0) {
+            toast({
+                title: "Attendance Scan Complete",
+                description: `Identified: ${presentNames.join(', ')}. The roster will be updated shortly.`,
+                variant: "default",
+            });
+        } else {
+            toast({
+                title: "No students recognized",
+                description: "Please ensure students are clearly visible and try again.",
+                variant: "default",
+            });
+        }
+    } catch (error) {
+        setIsLoading(false);
+        setScanProgress(0);
+        console.error("Error running auto-attendance:", error);
         toast({
-            title: "Attendance Scan Complete",
-            description: `Identified: ${presentNames.join(', ')}. The roster will be updated shortly.`,
-            variant: "default",
+            title: "Error",
+            description: error instanceof Error ? error.message : "Could not complete auto-attendance.",
+            variant: "destructive",
         });
-      } else {
-         toast({
-            title: "No students recognized",
-            description: "Please ensure students are clearly visible and try again.",
-            variant: "default",
-        });
-      }
-      
-    } else {
-      toast({
-        title: "Error",
-        description: result.error || "Could not complete auto-attendance.",
-        variant: "destructive",
-      });
     }
   };
 
