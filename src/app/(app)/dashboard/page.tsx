@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, BookOpen, Clock, Users } from "lucide-react";
-import { getClassesForTeacher, getSubject, getTeacherFromSession } from "@/lib/actions";
+import { getClassesForTeacher, getSubject } from "@/lib/mock-data";
+import { getTeacherFromSession } from "@/lib/actions";
 
 export default async function DashboardPage() {
   const teacher = await getTeacherFromSession();
