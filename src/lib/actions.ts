@@ -14,7 +14,6 @@ import {
   AutoAttendanceInput,
   AutoAttendanceOutput,
 } from "@/ai/flows/auto-attendance";
-import { getAllTeachers, getTeacher } from "./mock-data";
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -37,8 +36,20 @@ export async function getTeacherFromSession(): Promise<Teacher | null> {
     if (!teacherId) {
         return null;
     }
-    const teacher = await getTeacher(teacherId);
-    return teacher || null;
+    const db = await getConnection();
+    const [rows]: any[] = await db.execute('SELECT * FROM Teacher WHERE TeacherCode = ?', [teacherId]);
+    const teacher = rows[0];
+    if (!teacher) return null;
+     return {
+        id: teacher.Id,
+        teacherCode: teacher.TeacherCode,
+        nickname: teacher.TeacherNickname,
+        name: teacher.TeacherName,
+        avatarUrl: `https://placehold.co/100x100.png`, 
+        email: teacher.EmailAddress,
+        campus: teacher.Campus,
+        department: teacher.Department,
+  };
 }
 
 export async function deleteSession() {
@@ -48,15 +59,15 @@ export async function deleteSession() {
 
 // AI Flow Wrappers
 export async function runTeacherAuthentication(input: AuthenticateTeacherInput): Promise<AuthenticateTeacherOutput> {
-    return authenticateTeacher(input);
+    const result = await authenticateTeacher(input);
+    if(result.isMatch){
+        await createSession(input.teacherCode);
+    }
+    return result;
 }
 
 export async function runAutoAttendance(input: AutoAttendanceInput): Promise<AutoAttendanceOutput> {
     return autoAttendance(input);
-}
-
-export async function getTeachersForLogin(): Promise<Teacher[]> {
-    return getAllTeachers();
 }
 
 

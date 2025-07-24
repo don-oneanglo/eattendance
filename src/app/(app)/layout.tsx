@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen flex flex-col">
-      <AppHeader teacherName={teacher?.name} />
+      <AppHeader teacherName={teacher.name} />
       <main className="flex-1">
         {children}
       </main>
