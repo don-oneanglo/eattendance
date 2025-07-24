@@ -48,15 +48,10 @@ export const registerFaceFlow = ai.defineFlow(
       const imageBuffer = Buffer.from(base64Data, 'base64');
 
       const db = await getConnection();
-      await db
-        .input('personType', personType)
-        .input('personCode', personCode)
-        .input('imageData', imageBuffer)
-        .input('originalName', originalName)
-        .input('contentType', contentType)
-        .query(
+      await db.execute(
           `INSERT INTO FaceData (PersonType, PersonCode, ImageData, OriginalName, ContentType) 
-           VALUES (@personType, @personCode, @imageData, @originalName, @contentType)`
+           VALUES (?, ?, ?, ?, ?)`,
+          [personType, personCode, imageBuffer, originalName, contentType]
         );
 
       return { success: true };

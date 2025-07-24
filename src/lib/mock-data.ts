@@ -5,8 +5,8 @@ import { getConnection } from './db';
 // Helper functions to query live database
 export async function getTeacher(teacherId: string): Promise<Teacher | undefined> {
   const db = await getConnection();
-  const result = await db.input('teacherCode', teacherId).query('SELECT * FROM Teacher WHERE TeacherCode = @teacherCode');
-  const teacher = result.recordset[0];
+  const [rows]: any[] = await db.execute('SELECT * FROM Teacher WHERE TeacherCode = ?', [teacherId]);
+  const teacher = rows[0];
   if (!teacher) return undefined;
   return {
     id: teacher.Id,
@@ -22,8 +22,8 @@ export async function getTeacher(teacherId: string): Promise<Teacher | undefined
 
 export async function getAllTeachers(): Promise<Teacher[]> {
   const db = await getConnection();
-  const result = await db.query('SELECT * FROM Teacher');
-  return result.recordset.map((teacher: any) => ({
+  const [rows]: any[] = await db.execute('SELECT * FROM Teacher');
+  return rows.map((teacher: any) => ({
     id: teacher.Id,
     teacherCode: teacher.TeacherCode,
     nickname: teacher.TeacherNickname,
@@ -38,7 +38,7 @@ export async function getAllTeachers(): Promise<Teacher[]> {
 export async function getClassesForTeacher(teacherId: string): Promise<AppClass[]> {
   const db = await getConnection();
   // This query aggregates students for each class taught by the teacher
-  const result = await db.input('teacherCode', teacherId).query(`
+  const [rows]: any[] = await db.execute(`
     SELECT
         c.SubjectSetID as id,
         s.Subject as name,
@@ -46,14 +46,13 @@ export async function getClassesForTeacher(teacherId: string): Promise<AppClass[
         c.TeacherCode as teacherId
     FROM Class c
     JOIN SubjectSet s ON c.SubjectSetID = s.SubjectSetID
-    WHERE c.TeacherCode = @teacherCode
+    WHERE c.TeacherCode = ?
     GROUP BY c.SubjectSetID, s.Subject, c.TeacherCode
-  `);
+  `, [teacherId]);
 
-  const classes: AppClass[] = await Promise.all(result.recordset.map(async (c: any) => {
-     const studentDb = await getConnection();
-     const studentResult = await studentDb.input('subjectSetId', c.id).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
-     const studentIds = studentResult.recordset.map((s: any) => s.StudentCode);
+  const classes: AppClass[] = await Promise.all(rows.map(async (c: any) => {
+     const [studentRows]: any[] = await db.execute('SELECT StudentCode FROM Class WHERE SubjectSetID = ?', [c.id]);
+     const studentIds = studentRows.map((s: any) => s.StudentCode);
      
      // Mocking time for now as it's not in the base Class table schema
      return {
@@ -69,7 +68,7 @@ export async function getClassesForTeacher(teacherId: string): Promise<AppClass[
 
 export async function getAllClasses(): Promise<AppClass[]> {
     const db = await getConnection();
-    const result = await db.query(`
+    const [rows]: any[] = await db.execute(`
     SELECT
         c.SubjectSetID as id,
         s.Subject as name,
@@ -80,10 +79,9 @@ export async function getAllClasses(): Promise<AppClass[]> {
     GROUP BY c.SubjectSetID, s.Subject, c.TeacherCode
   `);
 
-  const classes: AppClass[] = await Promise.all(result.recordset.map(async (c: any) => {
-     const studentDb = await getConnection();
-     const studentResult = await studentDb.input('subjectSetId', c.id).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
-     const studentIds = studentResult.recordset.map((s: any) => s.StudentCode.trim());
+  const classes: AppClass[] = await Promise.all(rows.map(async (c: any) => {
+     const [studentRows]: any[] = await db.execute('SELECT StudentCode FROM Class WHERE SubjectSetID = ?', [c.id]);
+     const studentIds = studentRows.map((s: any) => s.StudentCode.trim());
      
      return {
         id: c.id.trim(),
@@ -102,7 +100,7 @@ export async function getAllClasses(): Promise<AppClass[]> {
 
 export async function getClass(classId: string): Promise<AppClass | undefined> {
   const db = await getConnection();
-  const result = await db.input('subjectSetId', classId).query(`
+  const [rows]: any[] = await db.execute(`
     SELECT
         c.SubjectSetID as id,
         s.Subject as name,
@@ -110,16 +108,15 @@ export async function getClass(classId: string): Promise<AppClass | undefined> {
         c.TeacherCode as teacherId
     FROM Class c
     JOIN SubjectSet s ON c.SubjectSetID = s.SubjectSetID
-    WHERE c.SubjectSetID = @subjectSetId
+    WHERE c.SubjectSetID = ?
     GROUP BY c.SubjectSetID, s.Subject, c.TeacherCode
-  `);
+  `, [classId]);
 
-  const classInfo = result.recordset[0];
+  const classInfo = rows[0];
   if (!classInfo) return undefined;
   
-  const studentDb = await getConnection();
-  const studentResult = await studentDb.input('subjectSetId', classId).query('SELECT StudentCode FROM Class WHERE SubjectSetID = @subjectSetId');
-  const studentIds = studentResult.recordset.map((s: any) => s.StudentCode.trim());
+  const [studentRows]: any[] = await db.execute('SELECT StudentCode FROM Class WHERE SubjectSetID = ?', [classId]);
+  const studentIds = studentRows.map((s: any) => s.StudentCode.trim());
 
   return {
     id: classInfo.id.trim(),
@@ -134,13 +131,13 @@ export async function getClass(classId: string): Promise<AppClass | undefined> {
 
 export async function getStudentsForClass(classId: string): Promise<Student[]> {
   const db = await getConnection();
-  const result = await db.input('subjectSetId', classId).query(`
+  const [rows]: any[] = await db.execute(`
     SELECT s.* FROM Student s
     JOIN Class c ON s.StudentCode = c.StudentCode
-    WHERE c.SubjectSetID = @subjectSetId
-  `);
+    WHERE c.SubjectSetID = ?
+  `, [classId]);
   
-  return result.recordset.map((student: any) => ({
+  return rows.map((student: any) => ({
     id: student.Id,
     studentCode: student.StudentCode,
     nickname: student.StudentNickname,
@@ -154,8 +151,8 @@ export async function getStudentsForClass(classId: string): Promise<Student[]> {
 
 export async function getAllStudents(): Promise<Student[]> {
   const db = await getConnection();
-  const result = await db.query('SELECT * FROM Student');
-  return result.recordset.map((student: any) => ({
+  const [rows]: any[] = await db.execute('SELECT * FROM Student');
+  return rows.map((student: any) => ({
     id: student.Id,
     studentCode: student.StudentCode,
     nickname: student.StudentNickname,
@@ -169,8 +166,8 @@ export async function getAllStudents(): Promise<Student[]> {
 
 export async function getSubject(subjectId: string): Promise<SubjectSet | undefined> {
   const db = await getConnection();
-  const result = await db.input('subjectSetId', subjectId).query('SELECT * FROM SubjectSet WHERE SubjectSetID = @subjectSetId');
-  const subject = result.recordset[0];
+  const [rows]: any[] = await db.execute('SELECT * FROM SubjectSet WHERE SubjectSetID = ?', [subjectId]);
+  const subject = rows[0];
   if (!subject) return undefined;
   return {
     id: subject.Id,
@@ -184,8 +181,8 @@ export async function getSubject(subjectId: string): Promise<SubjectSet | undefi
 
 export async function getAllSubjects(): Promise<SubjectSet[]> {
     const db = await getConnection();
-    const result = await db.query('SELECT * FROM SubjectSet');
-    return result.recordset.map((subject: any) => ({
+    const [rows]: any[] = await db.execute('SELECT * FROM SubjectSet');
+    return rows.map((subject: any) => ({
         id: subject.Id,
         campus: subject.Campus,
         subjectSetId: subject.SubjectSetID,
@@ -198,9 +195,9 @@ export async function getAllSubjects(): Promise<SubjectSet[]> {
 
 export async function getSessionsForClass(classId: string): Promise<Session[]> {
     const db = await getConnection();
-    const result = await db.input('subjectSetId', classId).query('SELECT * FROM Sessions WHERE SubjectSetID = @subjectSetId ORDER BY SessionDate, StartTime');
+    const [rows]: any[] = await db.execute('SELECT * FROM Sessions WHERE SubjectSetID = ? ORDER BY SessionDate, StartTime', [classId]);
 
-    return result.recordset.map((session: any) => ({
+    return rows.map((session: any) => ({
         id: session.Id,
         name: session.SessionName,
         subjectSetId: session.SubjectSetID.trim(),
@@ -215,8 +212,8 @@ export async function getSessionsForClass(classId: string): Promise<Session[]> {
 
 export async function getSession(sessionId: number): Promise<Session | undefined> {
     const db = await getConnection();
-    const result = await db.input('sessionId', sessionId).query('SELECT * FROM Sessions WHERE Id = @sessionId');
-    const session = result.recordset[0];
+    const [rows]: any[] = await db.execute('SELECT * FROM Sessions WHERE Id = ?', [sessionId]);
+    const session = rows[0];
     if (!session) return undefined;
     
     return {
