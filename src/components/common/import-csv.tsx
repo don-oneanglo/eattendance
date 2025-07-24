@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader, Upload } from "lucide-react";
 import Papa from "papaparse";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type ImportCSVProps<T> = {
   onImport: (data: T[]) => Promise<{ success: boolean; error?: string, count?: number }>;
@@ -96,10 +97,10 @@ export function ImportCSV<T extends Record<string, any>>({
 
   return (
     <div className="space-y-4">
-        <div>
-            <h3 className="text-lg font-medium">{dialogTitle}</h3>
-            <p className="text-sm text-muted-foreground">{dialogDescription}</p>
-        </div>
+        <DialogHeader>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
+        </DialogHeader>
         <div className="space-y-2">
             <label className="text-sm font-medium">Required Headers</label>
             <div className="flex flex-wrap gap-2">
