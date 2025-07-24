@@ -1,3 +1,4 @@
+
 import { getAllStudents } from "@/lib/mock-data";
 import { columns } from "./columns";
 import { DataTable } from "@/components/common/data-table";

@@ -1,5 +1,7 @@
+
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { autoAttendance } from "@/ai/flows/auto-attendance";
 import { authenticateTeacher } from "@/ai/flows/authenticate-teacher";
 import { getStudentsForClass, getAllTeachers } from "./mock-data";
@@ -20,9 +22,37 @@ export async function addStudent(student: Omit<Student, 'id' | 'avatarUrl'>) {
             .input('form', student.form)
             .query(`INSERT INTO Student (StudentCode, StudentNickname, StudentName, EmailAddress, Campus, Form) 
                     VALUES (@studentCode, @nickname, @name, @email, @campus, @form)`);
+        revalidatePath("/admin/students");
         return { success: true };
     } catch (error: any) {
         console.error('Error adding student:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+export async function updateStudent(id: number, student: Omit<Student, 'id' | 'avatarUrl'>) {
+    try {
+        const db = await getConnection();
+        await db
+            .input('id', id)
+            .input('studentCode', student.studentCode)
+            .input('nickname', student.nickname)
+            .input('name', student.name)
+            .input('email', student.email)
+            .input('campus', student.campus)
+            .input('form', student.form)
+            .query(`UPDATE Student 
+                    SET StudentCode = @studentCode, 
+                        StudentNickname = @nickname, 
+                        StudentName = @name, 
+                        EmailAddress = @email, 
+                        Campus = @campus, 
+                        Form = @form
+                    WHERE Id = @id`);
+        revalidatePath("/admin/students");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating student:', error);
         return { success: false, error: error.message || "An unknown error occurred." };
     }
 }
