@@ -43,14 +43,16 @@ const authenticateTeacherPrompt = ai.definePrompt({
   output: {schema: AuthenticateTeacherOutputSchema},
   prompt: `You are an AI security guard for a school. You are given a photo of a person trying to log in and a list of all registered teachers.
 Your task is to identify if the person in the photo is one of the registered teachers.
-If you find a match, return the teacher's name and set isRegistered to true. If there is no match, set isRegistered to false and do not return a name.
+If you find a match, you MUST return the teacher's name from the provided list and set isRegistered to true.
+If there is no match, you MUST set isRegistered to false and you MUST NOT return a name.
 
 Teacher Photo:
 {{media url=teacherImageDataUri}}
 
-Registered Teachers: {{{knownTeacherList}}}
+Registered Teachers:
+- {{{knownTeacherList}}}
 
-Identified Teacher Name:`,
+`,
 });
 
 const authenticateTeacherFlow = ai.defineFlow(
@@ -63,10 +65,19 @@ const authenticateTeacherFlow = ai.defineFlow(
     const allTeachers = await getAllTeachers();
     const teacherNames = allTeachers.map(t => t.name);
 
+    if (teacherNames.length === 0) {
+      return { isRegistered: false };
+    }
+
     const {output} = await authenticateTeacherPrompt({
         ...input,
         knownTeacherList: teacherNames
     });
-    return output!;
+
+    if (!output) {
+      return { isRegistered: false };
+    }
+
+    return output;
   }
 );
