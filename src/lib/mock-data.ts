@@ -1,3 +1,4 @@
+
 import type { Student, Teacher, SubjectSet, AppClass, Session } from './types';
 import { getConnection } from './db';
 

@@ -179,4 +179,3 @@ export function EditClassForm({ classData, teachers, students, onSuccess }: Edit
     </Form>
   );
 }
-

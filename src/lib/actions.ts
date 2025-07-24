@@ -1,5 +1,4 @@
 
-
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -196,36 +195,49 @@ export async function updateClass(classId: string, teacherId: string, studentIds
         const transaction = new sql.Transaction(db);
         await transaction.begin();
 
-        // Delete existing students for the class
-        await new sql.Request(transaction)
-            .input('subjectSetId', sql.NVarChar, classId)
-            .query('DELETE FROM Class WHERE SubjectSetID = @subjectSetId');
-
-        // Get campus from subject
-        const subjectResult = await new sql.Request(transaction)
-            .input('subjectSetId', sql.NVarChar, classId)
-            .query('SELECT Campus FROM SubjectSet WHERE SubjectSetID = @subjectSetId');
-        const campus = subjectResult.recordset[0].Campus;
-
-        // Add the updated students
-        for (const studentId of studentIds) {
-            await new sql.Request(transaction)
-                .input('campus', sql.NVarChar, campus)
+        try {
+            // Delete existing students for the class
+            const deleteRequest = new sql.Request(transaction);
+            await deleteRequest
                 .input('subjectSetId', sql.NVarChar, classId)
-                .input('teacherCode', sql.NVarChar, teacherId)
-                .input('studentCode', sql.NVarChar, studentId)
-                .query('INSERT INTO Class (Campus, SubjectSetID, TeacherCode, StudentCode) VALUES (@campus, @subjectSetId, @teacherCode, @studentCode)');
-        }
-        
-        await transaction.commit();
+                .query('DELETE FROM Class WHERE SubjectSetID = @subjectSetId');
 
-        revalidatePath("/admin/classes");
-        return { success: true };
+            // Get campus from subject
+            const subjectRequest = new sql.Request(transaction);
+            const subjectResult = await subjectRequest
+                .input('subjectSetId', sql.NVarChar, classId)
+                .query('SELECT Campus FROM SubjectSet WHERE SubjectSetID = @subjectSetId');
+            
+            if (subjectResult.recordset.length === 0) {
+                throw new Error("Subject not found, cannot determine campus.");
+            }
+            const campus = subjectResult.recordset[0].Campus;
+
+            // Add the updated students
+            for (const studentId of studentIds) {
+                const insertRequest = new sql.Request(transaction);
+                await insertRequest
+                    .input('campus', sql.NVarChar, campus)
+                    .input('subjectSetId', sql.NVarChar, classId)
+                    .input('teacherCode', sql.NVarChar, teacherId)
+                    .input('studentCode', sql.NVarChar, studentId)
+                    .query('INSERT INTO Class (Campus, SubjectSetID, TeacherCode, StudentCode) VALUES (@campus, @subjectSetId, @teacherCode, @studentCode)');
+            }
+            
+            await transaction.commit();
+
+            revalidatePath("/admin/classes");
+            return { success: true };
+        } catch (err) {
+            await transaction.rollback();
+            throw err; // Re-throw error after rolling back
+        }
     } catch (error: any) {
         console.error('Error updating class:', error);
         return { success: false, error: error.message || "An unknown error occurred." };
     }
 }
+
 
 export async function deleteClass(classId: string) {
     try {
