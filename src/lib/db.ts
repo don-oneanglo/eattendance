@@ -1,10 +1,10 @@
 import sql from 'mssql';
 
 const sqlConfig = {
-  server: 'srv1521.hstgr.io',
-  user: 'u311154254_TADB',
-  password: 'Anglo!123456',
-  database: 'u311154254_TestAttendance',
+  server: 'DATABASE',
+  user: 'sa',
+  password: 'AngloSingapore2014',
+  database: 'TestAttendanceDB',
   pool: {
     max: 10,
     min: 0,
