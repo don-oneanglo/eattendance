@@ -5,6 +5,7 @@
 import { revalidatePath } from "next/cache";
 import { getConnection } from './db';
 import type { Student, Teacher } from './types';
+import sql from 'mssql';
 
 
 // Student Actions
@@ -12,12 +13,12 @@ export async function addStudent(student: Omit<Student, 'id' | 'avatarUrl'>) {
     try {
         const db = await getConnection();
         await db
-            .input('studentCode', student.studentCode)
-            .input('nickname', student.nickname)
-            .input('name', student.name)
-            .input('email', student.email)
-            .input('campus', student.campus)
-            .input('form', student.form)
+            .input('studentCode', sql.NVarChar, student.studentCode)
+            .input('nickname', sql.NVarChar, student.nickname)
+            .input('name', sql.NVarChar, student.name)
+            .input('email', sql.NVarChar, student.email)
+            .input('campus', sql.NVarChar, student.campus)
+            .input('form', sql.NVarChar, student.form)
             .query(`INSERT INTO Student (StudentCode, StudentNickname, StudentName, EmailAddress, Campus, Form) 
                     VALUES (@studentCode, @nickname, @name, @email, @campus, @form)`);
         revalidatePath("/admin/students");
@@ -32,13 +33,13 @@ export async function updateStudent(id: number, student: Omit<Student, 'id' | 'a
     try {
         const db = await getConnection();
         await db
-            .input('id', id)
-            .input('studentCode', student.studentCode)
-            .input('nickname', student.nickname)
-            .input('name', student.name)
-            .input('email', student.email)
-            .input('campus', student.campus)
-            .input('form', student.form)
+            .input('id', sql.Int, id)
+            .input('studentCode', sql.NVarChar, student.studentCode)
+            .input('nickname', sql.NVarChar, student.nickname)
+            .input('name', sql.NVarChar, student.name)
+            .input('email', sql.NVarChar, student.email)
+            .input('campus', sql.NVarChar, student.campus)
+            .input('form', sql.NVarChar, student.form)
             .query(`UPDATE Student 
                     SET StudentCode = @studentCode, 
                         StudentNickname = @nickname, 
@@ -60,17 +61,18 @@ export async function addTeacher(teacher: Omit<Teacher, 'id' | 'avatarUrl'>) {
     try {
         const db = await getConnection();
         await db
-            .input('teacherCode', teacher.teacherCode)
-            .input('nickname', teacher.nickname)
-            .input('name', teacher.name)
-            .input('email', teacher.email)
-            .input('campus', teacher.campus)
-            .input('department', teacher.department)
+            .input('teacherCode', sql.NVarChar, teacher.teacherCode)
+            .input('nickname', sql.NVarChar, teacher.nickname)
+            .input('name', sql.NVarChar, teacher.name)
+            .input('email', sql.NVarChar, teacher.email)
+            .input('campus', sql.NVarChar, teacher.campus)
+            .input('department', sql.NVarChar, teacher.department)
             .query(`INSERT INTO Teacher (TeacherCode, TeacherNickname, TeacherName, EmailAddress, Campus, Department) 
                     VALUES (@teacherCode, @nickname, @name, @email, @campus, @department)`);
         revalidatePath("/admin/teachers");
         return { success: true };
-    } catch (error: any) {
+    } catch (error: any)
+    {
         console.error('Error adding teacher:', error);
         return { success: false, error: error.message || "An unknown error occurred." };
     }
@@ -80,13 +82,13 @@ export async function updateTeacher(id: number, teacher: Omit<Teacher, 'id' | 'a
     try {
         const db = await getConnection();
         await db
-            .input('id', id)
-            .input('teacherCode', teacher.teacherCode)
-            .input('nickname', teacher.nickname)
-            .input('name', teacher.name)
-            .input('email', teacher.email)
-            .input('campus', teacher.campus)
-            .input('department', teacher.department)
+            .input('id', sql.Int, id)
+            .input('teacherCode', sql.NVarChar, teacher.teacherCode)
+            .input('nickname', sql.NVarChar, teacher.nickname)
+            .input('name', sql.NVarChar, teacher.name)
+            .input('email', sql.NVarChar, teacher.email)
+            .input('campus', sql.NVarChar, teacher.campus)
+            .input('department', sql.NVarChar, teacher.department)
             .query(`UPDATE Teacher 
                     SET TeacherCode = @teacherCode, 
                         TeacherNickname = @nickname, 
@@ -102,3 +104,4 @@ export async function updateTeacher(id: number, teacher: Omit<Teacher, 'id' | 'a
         return { success: false, error: error.message || "An unknown error occurred." };
     }
 }
+
