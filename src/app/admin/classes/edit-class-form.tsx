@@ -122,12 +122,11 @@ export function EditClassForm({ classData, teachers, students, onSuccess }: Edit
           name="studentIds"
           render={() => (
             <FormItem>
-              <FormLabel>Students</FormLabel>
-              <div className="flex flex-wrap gap-1">
-                {selectedStudents.map(studentId => {
-                    const student = students.find(s => s.studentCode === studentId);
-                    return student ? <Badge key={studentId} variant="secondary">{student.name}</Badge> : null;
-                })}
+              <div className="flex justify-between items-center">
+                <FormLabel>Students</FormLabel>
+                <span className="text-sm text-muted-foreground">
+                    {selectedStudents.length} of {students.length} selected
+                </span>
               </div>
               <ScrollArea className="h-72 w-full rounded-md border">
                 <div className="p-4">
@@ -140,7 +139,7 @@ export function EditClassForm({ classData, teachers, students, onSuccess }: Edit
                         return (
                           <FormItem
                             key={student.id}
-                            className="flex flex-row items-start space-x-3 space-y-0"
+                            className="flex flex-row items-center space-x-3 space-y-0 py-2"
                           >
                             <FormControl>
                               <Checkbox
@@ -156,7 +155,7 @@ export function EditClassForm({ classData, teachers, students, onSuccess }: Edit
                                 }}
                               />
                             </FormControl>
-                            <FormLabel className="font-normal">
+                            <FormLabel className="font-normal w-full cursor-pointer">
                               {student.name} ({student.studentCode})
                             </FormLabel>
                           </FormItem>
