@@ -33,7 +33,7 @@ export async function addStudent(student: Omit<Student, 'id' | 'avatarUrl'>) {
 export async function registerFace(input: {
     personType: 'student' | 'teacher';
     personCode: string;
-    imageData: string;
+    imageData: string; // This is the data URI
     originalName: string;
 }) {
     try {
