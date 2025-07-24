@@ -1,10 +1,11 @@
+
 import sql from 'mssql';
 
 const sqlConfig = {
-  server: 'DATABASE',
-  user: 'sa',
-  password: 'AngloSingapore2014',
-  database: 'TestAttendanceDB',
+  server: 'srv1521.hstgr.io',
+  user: 'u311154254_TADB',
+  password: 'Anglo!123456',
+  database: 'u311154254_TestAttendance',
   pool: {
     max: 10,
     min: 0,
@@ -13,7 +14,7 @@ const sqlConfig = {
   options: {
     encrypt: true, // For Azure
     trustServerCertificate: true, // Change to true for local dev / self-signed certs
-    connectionTimeout: 30000, // 30 seconds
+    connectionTimeout: 15000,
   }
 };
 
@@ -27,7 +28,7 @@ function sleep(ms: number) {
 }
 
 export async function getConnection() {
-  if (pool) {
+  if (pool && pool.connected) {
     return pool;
   }
 
@@ -39,8 +40,8 @@ export async function getConnection() {
       return pool;
     } catch (err: any) {
       console.error(`Database connection attempt ${attempt} failed:`, err.message);
-      if (pool) {
-        // Ensure pool is closed on failure
+      if (pool && !pool.connecting) {
+        // Ensure pool is closed on failure only if it's not in the middle of connecting
         await pool.close();
       }
       if (attempt === MAX_RETRIES) {
