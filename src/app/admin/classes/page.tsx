@@ -1,5 +1,5 @@
 
-import { getAllClasses, getAllStudents, getAllTeachers, getSubject } from "@/lib/mock-data";
+import { getAllClasses, getAllStudents, getAllTeachers, getSubject, getTeacher } from "@/lib/mock-data";
 import { ImportClasses } from "./import-classes";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
