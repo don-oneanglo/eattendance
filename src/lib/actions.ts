@@ -14,8 +14,36 @@ import {
   AutoAttendanceInput,
   AutoAttendanceOutput,
 } from "@/ai/flows/auto-attendance";
-import { getAllTeachers } from "./mock-data";
+import { getAllTeachers, getTeacher } from "./mock-data";
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
+
+// Session Actions
+const SESSION_COOKIE_NAME = 'session_teacher_id';
+
+export async function createSession(teacherId: string) {
+    cookies().set(SESSION_COOKIE_NAME, teacherId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 7, // One week
+        path: '/',
+    });
+}
+
+export async function getTeacherFromSession(): Promise<Teacher | null> {
+    const teacherId = cookies().get(SESSION_COOKIE_NAME)?.value;
+    if (!teacherId) {
+        return null;
+    }
+    const teacher = await getTeacher(teacherId);
+    return teacher || null;
+}
+
+export async function deleteSession() {
+    cookies().delete(SESSION_COOKIE_NAME);
+    redirect('/');
+}
 
 // AI Flow Wrappers
 export async function runTeacherAuthentication(input: AuthenticateTeacherInput): Promise<AuthenticateTeacherOutput> {

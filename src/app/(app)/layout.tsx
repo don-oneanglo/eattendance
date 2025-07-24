@@ -1,9 +1,14 @@
+
 import { AppHeader } from "@/components/common/header";
-import { getTeacher } from "@/lib/mock-data";
+import { getTeacherFromSession } from "@/lib/actions";
+import { redirect } from 'next/navigation';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  // In a real app, you'd get the logged-in user's ID from a session
-  const teacher = await getTeacher("T001");
+  const teacher = await getTeacherFromSession();
+
+  if (!teacher) {
+    redirect('/');
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

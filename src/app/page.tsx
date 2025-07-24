@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -11,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { runTeacherAuthentication, getTeachersForLogin } from "@/lib/actions";
+import { runTeacherAuthentication, getTeachersForLogin, createSession } from "@/lib/actions";
 import { Teacher } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -134,11 +135,10 @@ export default function LoginPage() {
             loginImageDataUri: imageDataUri,
         });
         
-        setIsScanning(false);
-
         const teacher = teachers.find(t => t.teacherCode === selectedTeacher);
 
         if (result.isMatch) {
+            await createSession(selectedTeacher);
             setIsAuthenticated(true);
             toast({
                 title: `Welcome, ${teacher?.name}!`,
@@ -146,6 +146,7 @@ export default function LoginPage() {
                 variant: "default",
             });
         } else {
+             setIsScanning(false);
              toast({
                 title: "Authentication Failed",
                 description: "Face does not match the registered profile. Please try again.",

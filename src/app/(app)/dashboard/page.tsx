@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import {
   Card,
@@ -9,13 +10,17 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, BookOpen, Clock, Users } from "lucide-react";
-import { getClassesForTeacher, getSubject, getTeacher } from "@/lib/mock-data";
+import { getClassesForTeacher, getSubject, getTeacherFromSession } from "@/lib/actions";
 
 export default async function DashboardPage() {
-  // In a real app, you'd get this from the user's session
-  const teacherId = "T001";
-  const teacher = await getTeacher(teacherId);
-  const classes = await getClassesForTeacher(teacherId);
+  const teacher = await getTeacherFromSession();
+  
+  if (!teacher) {
+    // This should be handled by the layout, but as a fallback
+    return <div>Not authorized</div>
+  }
+
+  const classes = await getClassesForTeacher(teacher.teacherCode);
 
   return (
     <div className="container py-8">

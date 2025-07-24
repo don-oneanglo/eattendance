@@ -1,3 +1,6 @@
+
+"use client";
+
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,8 +14,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LayoutDashboard, LogOut } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
+import { deleteSession } from "@/lib/actions";
+import { useRouter } from "next/navigation";
 
-export function AppHeader({ teacherName = "Mr. Smith" }: { teacherName?: string }) {
+export function AppHeader({ teacherName = "Teacher" }: { teacherName?: string }) {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await deleteSession();
+    router.push('/');
+  }
+  
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/80 backdrop-blur">
       <div className="container flex h-16 items-center">
@@ -49,11 +61,9 @@ export function AppHeader({ teacherName = "Mr. Smith" }: { teacherName?: string 
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Log out</span>
-                    </Link>
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
