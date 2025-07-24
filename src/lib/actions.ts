@@ -4,7 +4,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getConnection } from './db';
-import type { Student, Teacher } from './types';
+import type { Student, Teacher, SubjectSet, AppClass } from './types';
 import sql from 'mssql';
 
 
@@ -56,6 +56,19 @@ export async function updateStudent(id: number, student: Omit<Student, 'id' | 'a
     }
 }
 
+export async function deleteStudent(id: number) {
+    try {
+        const db = await getConnection();
+        await db.input('id', sql.Int, id).query('DELETE FROM Student WHERE Id = @id');
+        revalidatePath("/admin/students");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error deleting student:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+
 // Teacher Actions
 export async function addTeacher(teacher: Omit<Teacher, 'id' | 'avatarUrl'>) {
     try {
@@ -105,3 +118,123 @@ export async function updateTeacher(id: number, teacher: Omit<Teacher, 'id' | 'a
     }
 }
 
+export async function deleteTeacher(id: number) {
+    try {
+        const db = await getConnection();
+        await db.input('id', sql.Int, id).query('DELETE FROM Teacher WHERE Id = @id');
+        revalidatePath("/admin/teachers");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error deleting teacher:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+// Subject Actions
+export async function addSubject(subject: Omit<SubjectSet, 'id'>) {
+    try {
+        const db = await getConnection();
+        await db
+            .input('campus', sql.NVarChar, subject.campus)
+            .input('subjectSetId', sql.NVarChar, subject.subjectSetId)
+            .input('subject', sql.NVarChar, subject.subject)
+            .input('description', sql.NVarChar, subject.description)
+            .input('credits', sql.Int, subject.credits)
+            .query(`INSERT INTO SubjectSet (Campus, SubjectSetID, Subject, SubjectSetDescription, Credits) 
+                    VALUES (@campus, @subjectSetId, @subject, @description, @credits)`);
+        revalidatePath("/admin/subjects");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error adding subject:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+export async function updateSubject(id: number, subject: Omit<SubjectSet, 'id'>) {
+    try {
+        const db = await getConnection();
+        await db
+            .input('id', sql.Int, id)
+            .input('campus', sql.NVarChar, subject.campus)
+            .input('subjectSetId', sql.NVarChar, subject.subjectSetId)
+            .input('subject', sql.NVarChar, subject.subject)
+            .input('description', sql.NVarChar, subject.description)
+            .input('credits', sql.Int, subject.credits)
+            .query(`UPDATE SubjectSet 
+                    SET Campus = @campus, 
+                        SubjectSetID = @subjectSetId, 
+                        Subject = @subject, 
+                        SubjectSetDescription = @description,
+                        Credits = @credits
+                    WHERE Id = @id`);
+        revalidatePath("/admin/subjects");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating subject:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+export async function deleteSubject(id: number) {
+    try {
+        const db = await getConnection();
+        // You might want to handle related classes first
+        await db.input('id', sql.Int, id).query('DELETE FROM SubjectSet WHERE Id = @id');
+        revalidatePath("/admin/subjects");
+        revalidatePath("/admin/classes");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error deleting subject:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+// Class Actions
+export async function updateClass(classId: string, teacherId: string, studentIds: string[]) {
+     try {
+        const db = await getConnection();
+        const transaction = new sql.Transaction(db);
+        await transaction.begin();
+
+        // Delete existing students for the class
+        await new sql.Request(transaction)
+            .input('subjectSetId', sql.NVarChar, classId)
+            .query('DELETE FROM Class WHERE SubjectSetID = @subjectSetId');
+
+        // Get campus from subject
+        const subjectResult = await new sql.Request(transaction)
+            .input('subjectSetId', sql.NVarChar, classId)
+            .query('SELECT Campus FROM SubjectSet WHERE SubjectSetID = @subjectSetId');
+        const campus = subjectResult.recordset[0].Campus;
+
+        // Add the updated students
+        for (const studentId of studentIds) {
+            await new sql.Request(transaction)
+                .input('campus', sql.NVarChar, campus)
+                .input('subjectSetId', sql.NVarChar, classId)
+                .input('teacherCode', sql.NVarChar, teacherId)
+                .input('studentCode', sql.NVarChar, studentId)
+                .query('INSERT INTO Class (Campus, SubjectSetID, TeacherCode, StudentCode) VALUES (@campus, @subjectSetId, @teacherCode, @studentCode)');
+        }
+        
+        await transaction.commit();
+
+        revalidatePath("/admin/classes");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error updating class:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}
+
+export async function deleteClass(classId: string) {
+    try {
+        const db = await getConnection();
+        await db.input('subjectSetId', sql.NVarChar, classId).query('DELETE FROM Class WHERE SubjectSetID = @subjectSetId');
+        revalidatePath("/admin/classes");
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error deleting class:', error);
+        return { success: false, error: error.message || "An unknown error occurred." };
+    }
+}

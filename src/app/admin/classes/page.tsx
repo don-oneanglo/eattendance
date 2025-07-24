@@ -1,12 +1,15 @@
-import { getAllClasses } from "@/lib/mock-data"
-import { columns } from "./columns"
+
+import { getAllClasses, getAllStudents, getAllTeachers } from "@/lib/mock-data"
+import { getColumns } from "./columns"
 import { DataTable } from "@/components/common/data-table"
-import { AppClass } from "@/lib/types";
 import { getTeacher, getSubject } from "@/lib/mock-data";
 
 
 export default async function ClassesAdminPage() {
   const classes = await getAllClasses();
+  const teachers = await getAllTeachers();
+  const students = await getAllStudents();
+
   const processedClasses = await Promise.all(classes.map(async c => {
       const teacher = await getTeacher(c.teacherId);
       const subject = await getSubject(c.subjectId);
@@ -17,6 +20,8 @@ export default async function ClassesAdminPage() {
           studentCount: c.studentIds.length,
       }
   }));
+
+  const columns = getColumns(teachers, students);
 
   return (
     <div>

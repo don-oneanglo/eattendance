@@ -33,9 +33,10 @@ type StudentFormValues = z.infer<typeof studentFormSchema>;
 
 type EditStudentFormProps = {
   student: Student;
+  onSuccess?: () => void;
 };
 
-export function EditStudentForm({ student }: EditStudentFormProps) {
+export function EditStudentForm({ student, onSuccess }: EditStudentFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const form = useForm<StudentFormValues>({
@@ -62,7 +63,7 @@ export function EditStudentForm({ student }: EditStudentFormProps) {
           title: "Student Updated",
           description: "The student's details have been successfully updated.",
         });
-        // Optionally, close dialog and refresh data
+        if (onSuccess) onSuccess();
       } else {
         toast({
           variant: "destructive",

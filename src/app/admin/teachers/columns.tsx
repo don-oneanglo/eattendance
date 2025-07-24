@@ -5,6 +5,17 @@ import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -23,6 +34,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { Teacher } from "@/lib/types"
 import { EditTeacherForm } from "./edit-teacher-form"
+import { deleteTeacher } from "@/lib/actions"
+import { useToast } from "@/hooks/use-toast"
+import { useState } from "react"
 
 export const columns: ColumnDef<Teacher>[] = [
   {
@@ -65,12 +79,26 @@ export const columns: ColumnDef<Teacher>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => {
+    cell: function Cell({ row }) {
       const teacher = row.original
+      const { toast } = useToast()
+      const [isDialogOpen, setIsDialogOpen] = useState(false)
+      const [isAlertOpen, setIsAlertOpen] = useState(false)
+
+      const handleDelete = async () => {
+        const result = await deleteTeacher(teacher.id)
+        if (result.success) {
+          toast({ title: "Teacher Deleted", description: `${teacher.name} has been removed.` })
+        } else {
+          toast({ variant: "destructive", title: "Error", description: result.error })
+        }
+        setIsAlertOpen(false)
+      }
 
       return (
         <div className="text-right">
-             <Dialog>
+             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                 <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
@@ -89,9 +117,11 @@ export const columns: ColumnDef<Teacher>[] = [
                     <DialogTrigger asChild>
                         <DropdownMenuItem>Edit Teacher</DropdownMenuItem>
                     </DialogTrigger>
-                    <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                        Delete Teacher
-                    </DropdownMenuItem>
+                    <AlertDialogTrigger asChild>
+                      <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                          Delete Teacher
+                      </DropdownMenuItem>
+                    </AlertDialogTrigger>
                 </DropdownMenuContent>
                 </DropdownMenu>
                  <DialogContent>
@@ -101,8 +131,23 @@ export const columns: ColumnDef<Teacher>[] = [
                         Update the details for {teacher.name}.
                     </DialogDescription>
                     </DialogHeader>
-                    <EditTeacherForm teacher={teacher} />
+                    <EditTeacherForm teacher={teacher} onSuccess={() => setIsDialogOpen(false)} />
                 </DialogContent>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the teacher record for {teacher.name}.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </Dialog>
         </div>
       )

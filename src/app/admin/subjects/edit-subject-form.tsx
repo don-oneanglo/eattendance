@@ -14,54 +14,50 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { updateTeacher } from "@/lib/actions";
+import { updateSubject } from "@/lib/actions";
 import { Loader } from "lucide-react";
 import { useState } from "react";
-import type { Teacher } from "@/lib/types";
+import type { SubjectSet } from "@/lib/types";
 
-const teacherFormSchema = z.object({
-  teacherCode: z.string().min(1, "Teacher ID is required"),
-  name: z.string().min(1, "Name is required"),
-  nickname: z.string().optional(),
-  email: z.string().email("Invalid email address"),
+const subjectFormSchema = z.object({
+  subjectSetId: z.string().min(1, "Subject ID is required"),
+  subject: z.string().min(1, "Subject name is required"),
+  description: z.string().min(1, "Description is required"),
   campus: z.string().min(1, "Campus is required"),
-  department: z.string().min(1, "Department is required"),
+  credits: z.coerce.number().min(0, "Credits must be a positive number"),
 });
 
-type TeacherFormValues = z.infer<typeof teacherFormSchema>;
+type SubjectFormValues = z.infer<typeof subjectFormSchema>;
 
-type EditTeacherFormProps = {
-  teacher: Teacher;
+type EditSubjectFormProps = {
+  subject: SubjectSet;
   onSuccess?: () => void;
 };
 
-export function EditTeacherForm({ teacher, onSuccess }: EditTeacherFormProps) {
+export function EditSubjectForm({ subject, onSuccess }: EditSubjectFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const form = useForm<TeacherFormValues>({
-    resolver: zodResolver(teacherFormSchema),
+  const form = useForm<SubjectFormValues>({
+    resolver: zodResolver(subjectFormSchema),
     defaultValues: {
-      teacherCode: teacher.teacherCode,
-      name: teacher.name,
-      nickname: teacher.nickname,
-      email: teacher.email,
-      campus: teacher.campus,
-      department: teacher.department,
+      subjectSetId: subject.subjectSetId,
+      subject: subject.subject,
+      description: subject.description,
+      campus: subject.campus,
+      credits: subject.credits,
     },
   });
 
-  async function onSubmit(data: TeacherFormValues) {
+  async function onSubmit(data: SubjectFormValues) {
     setIsLoading(true);
     try {
-      const result = await updateTeacher(teacher.id, {
-        ...data,
-        nickname: data.nickname || '',
-      });
+      const result = await updateSubject(subject.id, data);
       if (result.success) {
         toast({
-          title: "Teacher Updated",
-          description: "The teacher's details have been successfully updated.",
+          title: "Subject Updated",
+          description: "The subject has been successfully updated.",
         });
         if (onSuccess) onSuccess();
       } else {
@@ -87,12 +83,12 @@ export function EditTeacherForm({ teacher, onSuccess }: EditTeacherFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
-          name="teacherCode"
+          name="subjectSetId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Teacher ID</FormLabel>
+              <FormLabel>Subject ID</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., T001" {...field} />
+                <Input placeholder="e.g., CS101" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -100,12 +96,12 @@ export function EditTeacherForm({ teacher, onSuccess }: EditTeacherFormProps) {
         />
         <FormField
           control={form.control}
-          name="name"
+          name="subject"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Full Name</FormLabel>
+              <FormLabel>Subject Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., John Doe" {...field} />
+                <Input placeholder="e.g., Introduction to Computer Science" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -113,25 +109,25 @@ export function EditTeacherForm({ teacher, onSuccess }: EditTeacherFormProps) {
         />
         <FormField
           control={form.control}
-          name="nickname"
+          name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nickname</FormLabel>
+              <FormLabel>Description</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., John" {...field} />
+                <Textarea placeholder="Describe the subject..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
+         <FormField
           control={form.control}
-          name="email"
+          name="credits"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel>Credits</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., john.d@email.com" {...field} />
+                <Input type="number" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -145,19 +141,6 @@ export function EditTeacherForm({ teacher, onSuccess }: EditTeacherFormProps) {
               <FormLabel>Campus</FormLabel>
               <FormControl>
                 <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="department"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Department</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Science" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
