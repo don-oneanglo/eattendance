@@ -4,6 +4,31 @@
 import { revalidatePath } from "next/cache";
 import { getConnection } from './db';
 import type { Student, Teacher, SubjectSet, AppClass } from './types';
+import {
+  authenticateTeacher,
+  AuthenticateTeacherInput,
+  AuthenticateTeacherOutput,
+} from "@/ai/flows/authenticate-teacher";
+import {
+  autoAttendance,
+  AutoAttendanceInput,
+  AutoAttendanceOutput,
+} from "@/ai/flows/auto-attendance";
+import { getAllTeachers } from "./mock-data";
+
+
+// AI Flow Wrappers
+export async function runTeacherAuthentication(input: AuthenticateTeacherInput): Promise<AuthenticateTeacherOutput> {
+    return authenticateTeacher(input);
+}
+
+export async function runAutoAttendance(input: AutoAttendanceInput): Promise<AutoAttendanceOutput> {
+    return autoAttendance(input);
+}
+
+export async function getTeachersForLogin(): Promise<Teacher[]> {
+    return getAllTeachers();
+}
 
 
 // Student Actions

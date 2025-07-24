@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader, Sparkles, CameraOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { autoAttendance } from "@/ai/flows/auto-attendance";
+import { runAutoAttendance } from "@/lib/actions";
 
 type CameraViewProps = {
   classId: string;
@@ -101,7 +101,7 @@ export function CameraView({ classId }: CameraViewProps) {
     }
     
     try {
-        const result = await autoAttendance({
+        const result = await runAutoAttendance({
             classId: classId,
             studentImageDataUris: frames,
         });

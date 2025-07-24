@@ -11,18 +11,41 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { authenticateTeacher } from "@/ai/flows/authenticate-teacher";
+import { runTeacherAuthentication, getTeachersForLogin } from "@/lib/actions";
+import { Teacher } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 export default function LoginPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [selectedTeacher, setSelectedTeacher] = useState<string>('');
+
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    const fetchTeachers = async () => {
+        try {
+            const teacherList = await getTeachersForLogin();
+            setTeachers(teacherList);
+        } catch (error) {
+            console.error("Failed to fetch teachers:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not load the list of teachers. Please check your connection and try again.'
+            })
+        }
+    }
+    fetchTeachers();
+  }, [toast]);
 
   useEffect(() => {
     const getCameraPermission = async () => {
@@ -75,7 +98,15 @@ export default function LoginPage() {
   }, []);
 
   const handleLogin = async () => {
-    if (!hasCameraPermission) {
+    if (!selectedTeacher) {
+        toast({
+            variant: "destructive",
+            title: "No Teacher Selected",
+            description: "Please select your name from the list to log in."
+        });
+        return;
+    }
+     if (!hasCameraPermission) {
        toast({
           variant: 'destructive',
           title: 'Cannot Scan',
@@ -98,29 +129,26 @@ export default function LoginPage() {
     }
     
     try {
-        const result = await authenticateTeacher({
-            teacherImageDataUri: imageDataUri,
+        const result = await runTeacherAuthentication({
+            teacherCode: selectedTeacher,
+            loginImageDataUri: imageDataUri,
         });
         
         setIsScanning(false);
 
-        if (result.isRegistered && result.teacherName) {
+        const teacher = teachers.find(t => t.teacherCode === selectedTeacher);
+
+        if (result.isMatch) {
             setIsAuthenticated(true);
             toast({
-                title: `Welcome, ${result.teacherName}!`,
+                title: `Welcome, ${teacher?.name}!`,
                 description: "You have been successfully authenticated.",
                 variant: "default",
-            });
-        } else if (!result.isRegistered) {
-            toast({
-                title: "Authentication Failed",
-                description: "Unregistered person. Please register first.",
-                variant: "destructive",
             });
         } else {
              toast({
                 title: "Authentication Failed",
-                description: "Could not recognize your face. Please try again.",
+                description: "Face does not match the registered profile. Please try again.",
                 variant: "destructive",
             });
         }
@@ -182,27 +210,44 @@ export default function LoginPage() {
               <TabsContent value="teacher">
                 <CardHeader className="p-0 pt-6 text-center">
                     <CardDescription>
-                        Welcome back, please scan your face to log in.
+                        Select your name, then scan your face to log in.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0 pt-6">
-                    <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-secondary border border-dashed flex items-center justify-center mb-6">
-                        <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                        <div className="absolute w-[calc(100%-2rem)] h-[calc(100%-2rem)] border-4 border-white/50 rounded-lg z-20 pointer-events-none"></div>
-                        
-                        {hasCameraPermission === false && (
-                            <div className="absolute inset-0 bg-secondary/80 flex flex-col items-center justify-center text-center p-4">
-                                <CameraOff className="h-16 w-16 text-muted-foreground mb-4" />
-                                <h3 className="font-bold text-xl">Camera Not Available</h3>
-                                <p className="text-muted-foreground">Please grant camera permissions to log in.</p>
-                            </div>
-                        )}
-                        {hasCameraPermission === null && (
-                            <div className="absolute inset-0 bg-secondary/80 flex flex-col items-center justify-center text-center p-4">
-                                <Loader className="h-16 w-16 text-muted-foreground animate-spin mb-4" />
-                                <h3 className="font-bold text-xl">Accessing Camera...</h3>
-                            </div>
-                        )}
+                    <div className="space-y-4 mb-6">
+                         <div>
+                            <Label htmlFor="teacher-select">Teacher</Label>
+                            <Select onValueChange={setSelectedTeacher} value={selectedTeacher}>
+                              <SelectTrigger id="teacher-select">
+                                <SelectValue placeholder="Select your name..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {teachers.map((p) => (
+                                  <SelectItem key={p.teacherCode} value={p.teacherCode}>
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-secondary border border-dashed flex items-center justify-center">
+                            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                            <div className="absolute w-[calc(100%-2rem)] h-[calc(100%-2rem)] border-4 border-white/50 rounded-lg z-20 pointer-events-none"></div>
+                            
+                            {hasCameraPermission === false && (
+                                <div className="absolute inset-0 bg-secondary/80 flex flex-col items-center justify-center text-center p-4">
+                                    <CameraOff className="h-16 w-16 text-muted-foreground mb-4" />
+                                    <h3 className="font-bold text-xl">Camera Not Available</h3>
+                                    <p className="text-muted-foreground">Please grant camera permissions to log in.</p>
+                                </div>
+                            )}
+                            {hasCameraPermission === null && (
+                                <div className="absolute inset-0 bg-secondary/80 flex flex-col items-center justify-center text-center p-4">
+                                    <Loader className="h-16 w-16 text-muted-foreground animate-spin mb-4" />
+                                    <h3 className="font-bold text-xl">Accessing Camera...</h3>
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <Button
                     onClick={handleLogin}

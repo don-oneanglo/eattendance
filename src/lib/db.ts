@@ -1,10 +1,10 @@
 import mysql from 'mysql2/promise';
 
 const sqlConfig = {
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
+  host: 'srv1521.hstgr.io',
+  user: 'u311154254_TADB',
+  password: 'Anglo!123456',
+  database: 'u311154254_TestAttendance',
 };
 
 let pool: mysql.Pool;

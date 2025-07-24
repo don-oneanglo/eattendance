@@ -34,6 +34,7 @@ export const registerFaceFlow = ai.defineFlow(
     name: "registerFaceFlow",
     inputSchema: RegisterFaceInputSchema,
     outputSchema: RegisterFaceOutputSchema,
+    model: 'googleai/gemini-2.0-flash'
   },
   async (input) => {
     try {
@@ -50,7 +51,8 @@ export const registerFaceFlow = ai.defineFlow(
       const db = await getConnection();
       await db.execute(
           `INSERT INTO FaceData (PersonType, PersonCode, ImageData, OriginalName, ContentType) 
-           VALUES (?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE ImageData = VALUES(ImageData), OriginalName = VALUES(OriginalName), ContentType = VALUES(ContentType)`,
           [personType, personCode, imageBuffer, originalName, contentType]
         );
 

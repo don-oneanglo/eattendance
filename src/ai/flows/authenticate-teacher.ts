@@ -10,23 +10,20 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getAllTeachers } from '@/lib/mock-data';
+import { getConnection } from '@/lib/db';
 
 const AuthenticateTeacherInputSchema = z.object({
-  teacherImageDataUri: z
+  teacherCode: z.string().describe("The unique code of the teacher trying to log in."),
+  loginImageDataUri: z
     .string()
     .describe(
-      'A photo of the teacher as a data URI that must include a MIME type and use Base64 encoding. Expected format: data:<mimetype>;base64,<encoded_data>.'
+      'A photo of the person trying to log in, as a data URI.'
     ),
 });
 export type AuthenticateTeacherInput = z.infer<typeof AuthenticateTeacherInputSchema>;
 
 const AuthenticateTeacherOutputSchema = z.object({
-  teacherName: z
-    .string()
-    .optional()
-    .describe('The name of the teacher if identified, otherwise undefined.'),
-  isRegistered: z.boolean().describe("Whether the person in the photo is a registered teacher.")
+  isMatch: z.boolean().describe("Whether the face in the login photo matches the teacher's registered face.")
 });
 export type AuthenticateTeacherOutput = z.infer<typeof AuthenticateTeacherOutputSchema>;
 
@@ -34,24 +31,29 @@ export async function authenticateTeacher(input: AuthenticateTeacherInput): Prom
   return authenticateTeacherFlow(input);
 }
 
-const authenticateTeacherPrompt = ai.definePrompt({
-  name: 'authenticateTeacherPrompt',
-  input: {schema: z.object({
-      teacherImageDataUri: AuthenticateTeacherInputSchema.shape.teacherImageDataUri,
-      knownTeacherList: z.array(z.string()).describe('List of all teachers in the system.'),
-  })},
-  output: {schema: AuthenticateTeacherOutputSchema},
-  prompt: `You are an AI security guard for a school. You are given a photo of a person trying to log in and a list of all registered teachers.
-Your task is to identify if the person in the photo is one of the registered teachers.
-If you find a match, you MUST return the teacher's name from the provided list and set isRegistered to true.
-If there is no match, you MUST set isRegistered to false and you MUST NOT return a name.
+const getRegisteredFacePrompt = ai.definePrompt({
+    name: 'getRegisteredFacePrompt',
+    input: { schema: z.object({
+        registeredTeacherPhoto: z.string().describe('The registered photo of the teacher from the database.'),
+        loginPhoto: z.string().describe('The photo of the person trying to log in now.'),
+    })},
+    output: {schema: z.object({
+        isMatch: z.boolean().describe('Whether the two faces are a match.'),
+    })},
+    prompt: `You are a highly accurate AI face verification system. You will be given two images.
+The first is a trusted, registered photo of a person from a database.
+The second is a photo of a person attempting to log in right now.
 
-Teacher Photo:
-{{media url=teacherImageDataUri}}
+Your task is to determine if the person in the login photo is the SAME person as in the registered photo.
 
-Registered Teachers:
-- {{{knownTeacherList}}}
+- If they are the same person, you MUST set isMatch to true.
+- If they are different people, you MUST set isMatch to false.
 
+Registered Photo:
+{{media url=registeredTeacherPhoto}}
+
+Login Photo:
+{{media url=loginPhoto}}
 `,
 });
 
@@ -61,21 +63,32 @@ const authenticateTeacherFlow = ai.defineFlow(
     inputSchema: AuthenticateTeacherInputSchema,
     outputSchema: AuthenticateTeacherOutputSchema,
   },
-  async input => {
-    const allTeachers = await getAllTeachers();
-    const teacherNames = allTeachers.map(t => t.name);
+  async ({ teacherCode, loginImageDataUri }) => {
+    
+    // 1. Fetch the registered face data from the database
+    const db = await getConnection();
+    const [rows]: any[] = await db.execute(
+        'SELECT ImageData, ContentType FROM FaceData WHERE PersonCode = ? AND PersonType = ?',
+        [teacherCode, 'teacher']
+    );
 
-    if (teacherNames.length === 0) {
-      return { isRegistered: false };
+    if (rows.length === 0) {
+        throw new Error(`No registered face found for teacher ${teacherCode}. Please register the teacher's face first.`);
     }
 
-    const {output} = await authenticateTeacherPrompt({
-        ...input,
-        knownTeacherList: teacherNames
+    const faceData = rows[0];
+    const registeredImageData = Buffer.from(faceData.ImageData).toString('base64');
+    const registeredImageMimeType = faceData.ContentType;
+    const registeredImageDataUri = `data:${registeredImageMimeType};base64,${registeredImageData}`;
+    
+    // 2. Call the AI model to compare the faces
+    const { output } = await getRegisteredFacePrompt({
+        registeredTeacherPhoto: registeredImageDataUri,
+        loginPhoto: loginImageDataUri
     });
 
-    if (!output || !output.isRegistered) {
-      return { isRegistered: false };
+    if (!output) {
+      return { isMatch: false };
     }
 
     return output;
