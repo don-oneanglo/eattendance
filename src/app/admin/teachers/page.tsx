@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ImportTeachers } from "./import-teachers";
 
 
 export default async function TeachersAdminPage() {
@@ -24,23 +25,26 @@ export default async function TeachersAdminPage() {
             <h2 className="text-3xl font-bold tracking-tight font-headline">Teachers</h2>
             <p className="text-muted-foreground">Manage all teacher records in the system.</p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Add Teacher
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Teacher</DialogTitle>
-              <DialogDescription>
-                Fill in the details below to add a new teacher.
-              </DialogDescription>
-            </DialogHeader>
-            <AddTeacherForm />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+            <ImportTeachers />
+            <Dialog>
+            <DialogTrigger asChild>
+                <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Teacher
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                <DialogTitle>Add New Teacher</DialogTitle>
+                <DialogDescription>
+                    Fill in the details below to add a new teacher.
+                </DialogDescription>
+                </DialogHeader>
+                <AddTeacherForm />
+            </DialogContent>
+            </Dialog>
+        </div>
       </div>
       <DataTable columns={columns} data={teachers} filterColumn="name" />
     </div>
