@@ -6,6 +6,7 @@ const sqlConfig = {
   password: 'Anglo!123456',
   database: 'u311154254_TestAttendance',
   connectTimeout: 10000, // 10 seconds
+  connectionLimit: 10, // Explicitly limit the number of connections
 };
 
 let pool: mysql.Pool;
